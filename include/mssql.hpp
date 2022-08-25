@@ -25,11 +25,9 @@ namespace g80 {
     class mssql {
 
     private:
-        SQLHENV         hEnv = NULL;
-        SQLHDBC         hDbc = NULL;
-        SQLHSTMT        hStmt = NULL;
-        WCHAR*          pwszConnStr = NULL;
-        WCHAR           wszInput[SQL_QUERY_SIZE];
+        SQLHENV         hEnv_ = NULL;
+        SQLHDBC         hDbc_ = NULL;
+        SQLHSTMT        hStmt_ = NULL;
         std::wstring    last_error_;
 
     public:
@@ -41,30 +39,30 @@ namespace g80 {
         }
 
         auto alloc_null_env() -> bool {
-            if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR) return false;
+            if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv_) == SQL_ERROR) return false;
             return true;
         }
 
         auto set_env_attr() -> bool {
-            RETCODE rc = SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0); 
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_ENV, rc);
+            RETCODE rc = SQLSetEnvAttr(hEnv_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0); 
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_ENV, rc);
             if(rc == SQL_ERROR) return false;
             return true;
         }
 
         auto alloc_handle() -> bool {
-            RETCODE rc = SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc);
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_ENV, rc);
+            RETCODE rc = SQLAllocHandle(SQL_HANDLE_DBC, hEnv_, &hDbc_);
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_ENV, rc);
             if(rc == SQL_ERROR) return false;
             return true;
         }
 
         auto connect(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
-            RETCODE rc = SQLConnect(hDbc, 
+            RETCODE rc = SQLConnect(hDbc_, 
                 const_cast<wchar_t *>(server.c_str()), server.size(), 
                 const_cast<wchar_t *>(user.c_str()), user.size(), 
                 const_cast<wchar_t *>(passwd.c_str()), passwd.size());                      
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_DBC, rc);
             if(rc == SQL_ERROR) return false;
             return true;
         }
@@ -73,14 +71,27 @@ namespace g80 {
             wchar_t buff[1024];
             SQLSMALLINT actualsize;
             std::wstring conn_str = L"FILEDSN=D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn; UID=sa; PWD=Kerberos2014!";
-            RETCODE rc = SQLDriverConnect(hDbc, NULL, 
+            RETCODE rc = SQLDriverConnect(hDbc_, NULL, 
                 const_cast<wchar_t *>(conn_str.c_str()),
                 conn_str.size(), 
                 buff, 1024, &actualsize, SQL_DRIVER_NOPROMPT);
 
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_DBC, rc);
             if(rc == SQL_ERROR) return false;
             return true;
+        }
+
+        auto disconnect() -> void {
+            if(hDbc_) {
+                SQLDisconnect(hDbc_);
+                SQLFreeHandle(SQL_HANDLE_DBC, hDbc_);
+            }
+        }
+
+        auto free_env() -> void {
+            if(hEnv_) {
+                SQLFreeHandle(SQL_HANDLE_ENV, hEnv_);
+            }
         }
 
     };
