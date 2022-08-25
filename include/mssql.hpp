@@ -20,7 +20,7 @@ namespace g80 {
                 
                 SQLSMALLINT iRec = 0;
                 SQLINTEGER  iError;
-                WCHAR       wszMessage[1000];
+                WCHAR       wszMessage[1024] = {'\0'};
                 WCHAR       wszState[SQL_SQLSTATE_SIZE+1];
 
                 if (rc == SQL_INVALID_HANDLE) {
@@ -32,10 +32,9 @@ namespace g80 {
                         (SQLSMALLINT)(sizeof(wszMessage) / sizeof(WCHAR)),
                         (SQLSMALLINT *)NULL) == SQL_SUCCESS) {
                     
-                    if (wcsncmp(wszState, L"01004", 5))
-                    {
+                    //if (wcsncmp(wszState, L"01004", 5)) {
                         fwprintf(stderr, L"[%5.5s] %s (%d)\n", wszState, wszMessage, iError);
-                    }
+                    //}
                 }
             }
 
