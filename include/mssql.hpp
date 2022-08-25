@@ -25,10 +25,10 @@ namespace g80 {
     class odbc {
 
     private:
-        SQLHENV         hEnv_ = NULL;
-        SQLHDBC         hDbc_ = NULL;
-        SQLHSTMT        hStmt_ = NULL;
-        std::wstring    last_error_;
+        SQLHENV         hEnv_{nullptr};
+        SQLHDBC         hDbc_{nullptr};
+        SQLHSTMT        hStmt_{nullptr};
+        std::wstring    last_error_{};
 
     public:
 
