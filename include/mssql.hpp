@@ -38,43 +38,36 @@ namespace g80 {
             return last_error_;
         }
 
-        auto alloc_env() -> bool {
-            if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv_) == SQL_ERROR) return false;
-            RETCODE rc = SQLSetEnvAttr(hEnv_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0); 
+        auto handle_ret_code(RETCODE rc) -> bool {
             if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_ENV, rc);
             if(rc == SQL_ERROR) return false;
             return true;
+        }
+
+        auto alloc_env() -> bool {
+            if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv_) == SQL_ERROR) return false;
+            return handle_ret_code(SQLSetEnvAttr(hEnv_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)); 
         }
 
         auto alloc_handle() -> bool {
-            RETCODE rc = SQLAllocHandle(SQL_HANDLE_DBC, hEnv_, &hDbc_);
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_ENV, rc);
-            if(rc == SQL_ERROR) return false;
-            return true;
+            return handle_ret_code(SQLAllocHandle(SQL_HANDLE_DBC, hEnv_, &hDbc_));
         }
 
-        auto connect(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
-            RETCODE rc = SQLConnect(hDbc_, 
+        auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
+            return handle_ret_code(SQLConnect(hDbc_, 
                 const_cast<wchar_t *>(server.c_str()), server.size(), 
                 const_cast<wchar_t *>(user.c_str()), user.size(), 
-                const_cast<wchar_t *>(passwd.c_str()), passwd.size());                      
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_DBC, rc);
-            if(rc == SQL_ERROR) return false;
-            return true;
+                const_cast<wchar_t *>(passwd.c_str()), passwd.size()));
         }
 
-        auto connect2(const std::wstring &str) -> bool {
+        auto connect_by_conn_string(const std::wstring &str) -> bool {
             wchar_t buff[1024];
             SQLSMALLINT actualsize;
             std::wstring conn_str = L"FILEDSN=D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn; UID=sa; PWD=Kerberos2014!";
-            RETCODE rc = SQLDriverConnect(hDbc_, NULL, 
+            return handle_ret_code(SQLDriverConnect(hDbc_, NULL, 
                 const_cast<wchar_t *>(conn_str.c_str()),
                 conn_str.size(), 
-                buff, 1024, &actualsize, SQL_DRIVER_NOPROMPT);
-
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_DBC, rc);
-            if(rc == SQL_ERROR) return false;
-            return true;
+                buff, 1024, &actualsize, SQL_DRIVER_NOPROMPT));
         }
 
         auto disconnect() -> void {
