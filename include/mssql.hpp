@@ -25,15 +25,20 @@ namespace g80 {
     class mssql {
 
     private:
-        SQLHENV     hEnv = NULL;
-        SQLHDBC     hDbc = NULL;
-        SQLHSTMT    hStmt = NULL;
-        WCHAR*      pwszConnStr = NULL;
-        WCHAR       wszInput[SQL_QUERY_SIZE];
+        SQLHENV         hEnv = NULL;
+        SQLHDBC         hDbc = NULL;
+        SQLHSTMT        hStmt = NULL;
+        WCHAR*          pwszConnStr = NULL;
+        WCHAR           wszInput[SQL_QUERY_SIZE];
+        std::wstring    last_error_;
 
     public:
 
         mssql() {}
+
+        inline auto get_last_error() -> std::wstring &{
+            return last_error_;
+        }
 
         auto alloc_null_env() -> bool {
             if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR) return false;
