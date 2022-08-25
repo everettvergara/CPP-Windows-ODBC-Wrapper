@@ -63,14 +63,25 @@ namespace g80 {
             if(rc == SQL_ERROR) return false;
             return true;
         }
-        
-        auto connect(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
-            RETCODE rc = SQLConnect(hDbc, 
-                const_cast<wchar_t *>(server.c_str()), server.size(), 
-                const_cast<wchar_t *>(user.c_str()), user.size(), 
-                const_cast<wchar_t *>(passwd.c_str()), passwd.size());                      
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
-            if(rc == SQL_ERROR) return false;
+
+        auto connect2(const std::wstring &str) -> bool {
+            //wchar_t value[500];
+            // SQLReadFileDSN(
+            //     L"D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn", 
+            //     L"ODBC",
+            //     L"DRIVER",
+            //     value, 500, &actualsize);
+            wchar_t buff[1024];
+            SQLSMALLINT actualsize;
+            std::wstring conn_str = L"FILEDSN=D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn; UID=sa; PWD=Kerberos2014!";
+            RETCODE rc = SQLDriverConnect(hDbc, NULL, 
+                const_cast<wchar_t *>(conn_str.c_str()),
+                conn_str.size(), 
+                buff, 1024, &actualsize, SQL_DRIVER_NOPROMPT);
+
+            //     );                      
+            // if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
+            // if(rc == SQL_ERROR) return false;
             return true;
         }
 
