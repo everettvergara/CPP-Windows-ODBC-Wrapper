@@ -1,6 +1,9 @@
 #pragma once
 #define UNICODE
+
 #include <iostream>
+#include <sstream>
+#include <tuple>
 #include <string>
 #include <exception>
 #include <sqltypes.h>
@@ -11,7 +14,6 @@ namespace g80 {
         #define MESSAGE_SIZE 1024
 
         class odbc {
-
         private:
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
@@ -82,11 +84,22 @@ namespace g80 {
             auto operator=(odbc &&) -> odbc & = delete;
             ~odbc() {disconnect();}
 
-            inline auto get_last_message() const -> const wchar_t * {
-                return last_message_;
+            inline auto get_last_error() const -> const std::tuple<const WCHAR *, const WCHAR *, SQLINTEGER> {
+                return {last_state_, last_message_, last_error_};
             }
 
-             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
+            inline auto get_formatted_last_error() const -> std::wstring {
+                std::wstring out = last_state_;
+                out += L": ("; 
+                out += last_error_;
+                out += L") ";
+                out += last_message_;
+                out += L"\n";
+                return out;
+                
+            }
+
+            auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
                 if(!init()) return false;
                 return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLConnect(dbc_, 
                     const_cast<wchar_t *>(server.c_str()), server.size(), 
