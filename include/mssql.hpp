@@ -66,12 +66,14 @@ namespace g80 {
                 if(!dbc_) return true;
                 if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not disconnect db handle");
                 if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not deallocate db handle");
+                dbc_ = NULL;
                 return true;
             }
 
             auto dealloc_env() -> bool {
                 if(!env_) return true;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not free up env handle");
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(std::wstring(L"Could not free up env handle") + std::wstring(std::to_wstring(rc)));
+                env_ = NULL;
                 return true;
             }
 
@@ -115,8 +117,8 @@ namespace g80 {
             }
 
             auto disconnect() -> bool {
-                if(!dealloc_env()) return false;
                 if(!dealloc_connection()) return false;
+                if(!dealloc_env()) return false;
                 return true;
            }
         };
