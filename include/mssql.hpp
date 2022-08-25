@@ -67,13 +67,13 @@ namespace g80 {
                     const_cast<wchar_t *>(passwd.c_str()), passwd.size()));
             }
 
-            auto connect_by_file_dsn(const std::wstring &str) -> bool {
+            auto connect_by_file_dsn(const std::wstring &dsn, const std::wstring &user, const std::wstring &passwd) -> bool {
+                // TODO: Check if buffcan be removed
                 wchar_t buff[1024];
                 SQLSMALLINT actualsize;
-                std::wstring conn_str = L"FILEDSN=D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn; UID=sa; PWD=Kerberos2014!";
+                std::wstring conn_str = L"FILEDSN=" + dsn  + L"; UID=" + user + L"; PWD=" + passwd; 
                 return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLDriverConnect(dbc_, NULL, 
-                    const_cast<wchar_t *>(conn_str.c_str()),
-                    conn_str.size(), 
+                    const_cast<wchar_t *>(conn_str.c_str()), conn_str.size(), 
                     buff, 1024, &actualsize, SQL_DRIVER_NOPROMPT));
             }
 
