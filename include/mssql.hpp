@@ -38,12 +38,8 @@ namespace g80 {
             return last_error_;
         }
 
-        auto alloc_null_env() -> bool {
+        auto alloc_env() -> bool {
             if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv_) == SQL_ERROR) return false;
-            return true;
-        }
-
-        auto set_env_attr() -> bool {
             RETCODE rc = SQLSetEnvAttr(hEnv_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0); 
             if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv_, SQL_HANDLE_ENV, rc);
             if(rc == SQL_ERROR) return false;
