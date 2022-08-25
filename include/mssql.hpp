@@ -63,6 +63,17 @@ namespace g80 {
             if(rc == SQL_ERROR) return false;
             return true;
         }
+        
+        auto connect(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
+            RETCODE rc = SQLConnect(hDbc, 
+                const_cast<wchar_t *>(server.c_str()), server.size(), 
+                const_cast<wchar_t *>(user.c_str()), user.size(), 
+                const_cast<wchar_t *>(passwd.c_str()), passwd.size());                      
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
+            if(rc == SQL_ERROR) return false;
+            return true;
+        }
+
     };
 }
 
