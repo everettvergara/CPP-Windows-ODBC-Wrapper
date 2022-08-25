@@ -31,11 +31,12 @@ namespace g80 {
                         MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
             }
 
-            auto set_user_error(const std::wstring &error_msg) -> void {
+            auto set_user_error(const std::wstring &error_msg) -> bool {
                 wcscpy(last_message_, error_msg.c_str()); 
                 std::fill_n(last_state_, SQL_SQLSTATE_SIZE, TCHAR('?')); 
                 last_state_[SQL_SQLSTATE_SIZE] = TCHAR('\0');
                 last_error_ = 50001;
+                return false;
             }
 
             auto handle_ret_code(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> bool {
@@ -45,7 +46,7 @@ namespace g80 {
             }
 
            auto alloc_env() -> bool {
-                if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) {return false;}
+                if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) return set_user_error(L"Could not allocate environment handle");
                 return handle_ret_code(env_, SQL_HANDLE_ENV, SQLSetEnvAttr(env_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)); 
             }
 
@@ -61,13 +62,14 @@ namespace g80 {
 
             auto dealloc_connection() -> bool {
                 if(!dbc_) return true;
-                if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
+                if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not disconnect db handle");
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not deallocate db handle");
                 return true;
-             }
+            }
 
-            auto deinit() -> bool {
-
+            auto dealloc_env() -> bool {
+                if(!env_) return true;
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not free up env handle");
                 return true;
             }
 
@@ -78,7 +80,7 @@ namespace g80 {
             odbc(odbc &&) = delete;
             auto operator=(const odbc &) -> odbc & = delete;
             auto operator=(odbc &&) -> odbc & = delete;
-            ~odbc() {disconnect(); free_env();}
+            ~odbc() {disconnect();}
 
             inline auto get_last_message() const -> const wchar_t * {
                 return last_message_;
@@ -101,20 +103,10 @@ namespace g80 {
             }
 
             auto disconnect() -> bool {
-                if(!dbc_) return true;
-                if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
+                if(!dealloc_env()) return false;
+                if(!dealloc_connection()) return false;
                 return true;
-            }
-
-            auto free_env() -> bool {
-                if(!env_) return true;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
-                return true;
-            }
+           }
         };
-
-
-
     }
 }
