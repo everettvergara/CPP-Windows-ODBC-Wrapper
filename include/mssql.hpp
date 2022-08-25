@@ -65,12 +65,6 @@ namespace g80 {
         }
 
         auto connect2(const std::wstring &str) -> bool {
-            //wchar_t value[500];
-            // SQLReadFileDSN(
-            //     L"D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn", 
-            //     L"ODBC",
-            //     L"DRIVER",
-            //     value, 500, &actualsize);
             wchar_t buff[1024];
             SQLSMALLINT actualsize;
             std::wstring conn_str = L"FILEDSN=D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn; UID=sa; PWD=Kerberos2014!";
@@ -79,9 +73,8 @@ namespace g80 {
                 conn_str.size(), 
                 buff, 1024, &actualsize, SQL_DRIVER_NOPROMPT);
 
-            //     );                      
-            // if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
-            // if(rc == SQL_ERROR) return false;
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_DBC, rc);
+            if(rc == SQL_ERROR) return false;
             return true;
         }
 
@@ -97,7 +90,6 @@ void HandleDiagnosticRecord (SQLHANDLE      hHandle,
     SQLINTEGER  iError;
     WCHAR       wszMessage[1000];
     WCHAR       wszState[SQL_SQLSTATE_SIZE+1];
-
 
     if (RetCode == SQL_INVALID_HANDLE)
     {

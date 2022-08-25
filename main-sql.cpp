@@ -16,7 +16,7 @@ auto main(int argc, const char *argv[]) -> int {
     if(!sqlca.set_env_attr()) {std::cout << "error2";}
     if(!sqlca.alloc_handle()) {std::cout << "error3";}
 //    if(!sqlca.connect(L"test", L"sa", L"Kerberos2014!")) {std::cout << "error4";}
-    if(!sqlca.connect2(L"test")) {std::cout << "error4";}
+    if(!sqlca.connect2(L"test")) {std::cout << "error5";}
     std::cout << "here!";
         
 }
