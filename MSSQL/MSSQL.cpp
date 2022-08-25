@@ -102,7 +102,7 @@ void SetConsole(DWORD   cDisplaySize,
 
 SHORT   gHeight = 80;       // Users screen height
 
-int main(int argc, wchar_t** argv)
+int __cdecl wmain(int argc, _In_reads_(argc) WCHAR** argv)
 {
     SQLHENV     hEnv = NULL;
     SQLHDBC     hDbc = NULL;
