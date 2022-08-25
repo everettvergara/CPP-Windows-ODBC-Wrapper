@@ -22,7 +22,7 @@ namespace g80 {
 
     #define SQL_QUERY_SIZE 1000 
 
-    class mssql {
+    class odbc {
 
     private:
         SQLHENV         hEnv_ = NULL;
@@ -32,7 +32,12 @@ namespace g80 {
 
     public:
 
-        mssql() {}
+        odbc() {}
+        odbc(const odbc &) = delete;
+        odbc(odbc &&) = delete;
+        auto operator=(const odbc &) -> odbc & = delete;
+        auto operator=(odbc &&) -> odbc & = delete;
+        ~odbc() {disconnect(); free_env();}
 
         inline auto get_last_error() -> std::wstring & {
             return last_error_;
