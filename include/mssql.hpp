@@ -34,19 +34,24 @@ namespace g80 {
 
         mssql() {}
 
-        auto alloc_handle() -> bool {
+        auto alloc_null_env() -> bool {
             if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR) return false;
             return true;
         }
 
         auto set_env_attr() -> bool {
             RETCODE rc = SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0); 
-            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, 1, rc);
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_ENV, rc);
             if(rc == SQL_ERROR) return false;
             return true;
         }
 
-
+        auto alloc_handle() -> bool {
+            RETCODE rc = SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc);
+            if(rc != SQL_SUCCESS) HandleDiagnosticRecord(hEnv, SQL_HANDLE_ENV, rc);
+            if(rc == SQL_ERROR) return false;
+            return true;
+        }
     };
 }
 

@@ -10,8 +10,10 @@
 using namespace g80;
 auto main(int argc, const char *argv[]) -> int {
 
-    mssql sq;
+    mssql sqlca;
 
-    sq.alloc_handle();
-    sq.set_env_attr();
+    sqlca.alloc_null_env();
+    sqlca.set_env_attr();
+    sqlca.alloc_handle();
+        
 }
