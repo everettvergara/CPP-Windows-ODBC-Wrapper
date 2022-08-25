@@ -12,8 +12,9 @@ auto main(int argc, const char *argv[]) -> int {
 
     mssql sqlca;
 
-    sqlca.alloc_null_env();
-    sqlca.set_env_attr();
-    sqlca.alloc_handle();
+    if(!sqlca.alloc_null_env()) {std::cout << "error1";}
+    if(!sqlca.set_env_attr()) {std::cout << "error2";}
+    if(!sqlca.alloc_handle()) {std::cout << "error3";}
+    std::cout << "here!";
         
 }
