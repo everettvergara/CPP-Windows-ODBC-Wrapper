@@ -90,13 +90,12 @@ namespace g80 {
 
             inline auto get_formatted_last_error() const -> std::wstring {
                 std::wstring out = last_state_;
-                out += L": ("; 
-                out += last_error_;
-                out += L") ";
-                out += last_message_;
-                out += L"\n";
+                    out += L": ("; 
+                    out += std::to_wstring(last_error_);
+                    out += L") ";
+                    out += last_message_;
+                    out += L"\n";
                 return out;
-                
             }
 
             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
