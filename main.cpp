@@ -19,6 +19,8 @@
 /*      HandleError         Show ODBC error messages
 /******************************************************************************/
 
+#define UNICODE
+#include <algorithm>
 #include <windows.h>
 #include <sql.h>
 #include <sqlext.h>
@@ -101,7 +103,7 @@ void SetConsole(DWORD   cDisplaySize,
 
 SHORT   gHeight = 80;       // Users screen height
 
-int __cdecl wmain(int argc, _In_reads_(argc) WCHAR **argv)
+int main(int argc, wchar_t **argv)
 {
     SQLHENV     hEnv = NULL;
     SQLHDBC     hDbc = NULL;
@@ -138,7 +140,7 @@ int __cdecl wmain(int argc, _In_reads_(argc) WCHAR **argv)
     }
     else
     {
-        pwszConnStr = L"";
+        pwszConnStr = NULL;
     }
 
     // Connect to the driver.  Use the connection string if supplied
@@ -165,7 +167,7 @@ int __cdecl wmain(int argc, _In_reads_(argc) WCHAR **argv)
 
     // Loop to get input and execute queries
 
-    while(_fgetts(wszInput, SQL_QUERY_SIZE-1, stdin))
+    while(fgetws(wszInput, SQL_QUERY_SIZE-1, stdin))
     {
         RETCODE     RetCode;
         SQLSMALLINT sNumResults;
@@ -500,7 +502,7 @@ void AllocateBindings(HSTMT         hStmt,
                     &cchColumnNameLength,
                     NULL));
 
-        pThisBinding->cDisplaySize = max((SQLSMALLINT)cchDisplay, cchColumnNameLength);
+        pThisBinding->cDisplaySize = std::max((SQLSMALLINT)cchDisplay, cchColumnNameLength);
         if (pThisBinding->cDisplaySize < NULL_SIZE)
             pThisBinding->cDisplaySize = NULL_SIZE;
 
