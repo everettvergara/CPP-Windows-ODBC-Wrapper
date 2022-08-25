@@ -13,23 +13,62 @@ namespace g80 {
         class odbc {
 
         private:
-            SQLHENV     env_{nullptr};
-            SQLHDBC     dbc_{nullptr};
-            SQLHSTMT    stmt_{nullptr};
+            SQLHENV     env_{NULL};
+            SQLHDBC     dbc_{NULL};
+            SQLHSTMT    stmt_{NULL};
             WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
             WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
             SQLINTEGER  last_error_{0};
 
             void check_for_message(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE rc) {
-                SQLSMALLINT i = 0;
-                if (rc == SQL_INVALID_HANDLE) {
+                if(rc == SQL_INVALID_HANDLE) {
                     wcscpy(last_message_, L"Invalid Handle!");
                     return;
                 } 
-
-                while (SQLGetDiagRec(hType, hHandle, ++i, 
+                SQLSMALLINT i = 0;
+                while(SQLGetDiagRec(hType, hHandle, ++i, 
                         last_state_, &last_error_, last_message_, 
                         MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+            }
+
+            auto set_user_error(const std::wstring &error_msg) -> void {
+                wcscpy(last_message_, error_msg.c_str()); 
+                std::fill_n(last_state_, SQL_SQLSTATE_SIZE, TCHAR('?')); 
+                last_state_[SQL_SQLSTATE_SIZE] = TCHAR('\0');
+                last_error_ = 50001;
+            }
+
+            auto handle_ret_code(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> bool {
+                if(rc != SQL_SUCCESS) check_for_message(handle, type, rc);
+                if(rc == SQL_ERROR) return false;
+                return true;
+            }
+
+           auto alloc_env() -> bool {
+                if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) {return false;}
+                return handle_ret_code(env_, SQL_HANDLE_ENV, SQLSetEnvAttr(env_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)); 
+            }
+
+            auto alloc_connection() -> bool {
+                return handle_ret_code(env_, SQL_HANDLE_ENV, SQLAllocHandle(SQL_HANDLE_DBC, env_, &dbc_));
+            }
+
+            auto init() -> bool {
+                if(env_ == NULL && !alloc_env()) return false;
+                if(dbc_ == NULL && !alloc_connection()) return false;
+                return true;
+            }
+
+            auto dealloc_connection() -> bool {
+                if(!dbc_) return true;
+                if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
+                return true;
+             }
+
+            auto deinit() -> bool {
+
+                return true;
             }
 
         public:
@@ -41,26 +80,12 @@ namespace g80 {
             auto operator=(odbc &&) -> odbc & = delete;
             ~odbc() {disconnect(); free_env();}
 
-            inline auto get_last_error() const -> const wchar_t * {
+            inline auto get_last_message() const -> const wchar_t * {
                 return last_message_;
             }
 
-            auto handle_ret_code(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> bool {
-                if(rc != SQL_SUCCESS) check_for_message(handle, type, rc);
-                if(rc == SQL_ERROR) return false;
-                return true;
-            }
-
-            auto alloc_env() -> bool {
-                if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) return false;
-                return handle_ret_code(env_, SQL_HANDLE_ENV, SQLSetEnvAttr(env_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)); 
-            }
-
-            auto alloc_connection() -> bool {
-                return handle_ret_code(env_, SQL_HANDLE_ENV, SQLAllocHandle(SQL_HANDLE_DBC, env_, &dbc_));
-            }
-
-            auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
+             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
+                if(!init()) return false;
                 return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLConnect(dbc_, 
                     const_cast<wchar_t *>(server.c_str()), server.size(), 
                     const_cast<wchar_t *>(user.c_str()), user.size(), 
@@ -68,6 +93,7 @@ namespace g80 {
             }
 
             auto connect_by_file_dsn(const std::wstring &dsn, const std::wstring &user, const std::wstring &passwd) -> bool {
+                if(!init()) return false;
                 std::wstring conn_str = L"FILEDSN=" + dsn  + L"; UID=" + user + L"; PWD=" + passwd; 
                 return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLDriverConnect(dbc_, NULL, 
                     const_cast<wchar_t *>(conn_str.c_str()), conn_str.size(), 
@@ -86,7 +112,6 @@ namespace g80 {
                 if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return false;
                 return true;
             }
-
         };
 
 
