@@ -36,7 +36,7 @@ namespace g80 {
 
         mssql() {}
 
-        inline auto get_last_error() -> std::wstring &{
+        inline auto get_last_error() -> std::wstring & {
             return last_error_;
         }
 
