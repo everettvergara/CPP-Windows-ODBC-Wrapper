@@ -14,6 +14,13 @@ namespace g80 {
         #define SQL_QUERY_SIZE 8192
         #define MESSAGE_SIZE 1024
 
+        struct odbc_error_message {
+            WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
+            WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
+            SQLINTEGER  last_error_{0};
+        };
+
+
         class odbc {
         private:
             SQLHENV     env_{NULL};
@@ -140,8 +147,18 @@ namespace g80 {
                 return true;
             }
 
-            auto exec(SQLWCHAR *command) -> RETCODE {
+            auto exec(wchar_t *command) -> RETCODE {
                 return SQLExecDirect(stmt_, command, SQL_NTS);
+            }
+
+            auto handle_exec(RETCODE rc) -> bool {
+
+                switch(rc) {
+                    case SQL_SUCCESS_WITH_INFO: 
+                        check_for_message(stmt_, SQL_HANDLE_STMT, rc);
+                    case SQL_SUCCESS:
+                        // check_for_mess
+                }
             }
         };
     }
