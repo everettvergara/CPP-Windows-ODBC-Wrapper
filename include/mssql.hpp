@@ -19,7 +19,6 @@ namespace g80 {
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
             SQLHSTMT    stmt_{NULL};
-            WCHAR       query_{NULL};
             WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
             WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
             SQLINTEGER  last_error_{0};
@@ -50,22 +49,18 @@ namespace g80 {
             }
 
            auto alloc_env() -> bool {
+                if(env_ != NULL) return true;
                 if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) return set_user_error(L"Could not allocate environment handle");
                 return handle_ret_code(env_, SQL_HANDLE_ENV, SQLSetEnvAttr(env_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)); 
             }
 
             auto alloc_connection() -> bool {
+                if(dbc_ != NULL) return true;
                 return handle_ret_code(env_, SQL_HANDLE_ENV, SQLAllocHandle(SQL_HANDLE_DBC, env_, &dbc_));
             }
 
-            auto init() -> bool {
-                if(env_ == NULL && !alloc_env()) return false;
-                if(dbc_ == NULL && !alloc_connection()) return false;
-                return true;
-            }
-
             auto dealloc_connection() -> bool {
-                if(!dbc_) return true;
+                if(dbc_ == NULL) return true;
                 if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not disconnect db handle");
                 if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not deallocate db handle");
                 dbc_ = NULL;
@@ -73,21 +68,28 @@ namespace g80 {
             }
 
             auto dealloc_env() -> bool {
-                if(!env_) return true;
+                if(env_ == NULL) return true;
                 if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(std::wstring(L"Could not free up env handle") + std::wstring(std::to_wstring(rc)));
                 env_ = NULL;
                 return true;
             }
 
             auto alloc_statement() -> bool {
-                if(stmt_) return true;
+                if(stmt_ != NULL) return true;
                 return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLAllocHandle(SQL_HANDLE_STMT, dbc_, &stmt_));
             }
 
             auto dealloc_statement() -> bool {
-                if(!stmt_) return true;
+                if(stmt_ == NULL) return true;
                 if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_STMT, stmt_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(std::wstring(L"Could not free up stmt handle") + std::wstring(std::to_wstring(rc)));
                 stmt_ = NULL;
+                return true;
+            }
+
+            auto init() -> bool {
+                if(env_ == NULL && !alloc_env()) return false;
+                if(dbc_ == NULL && !alloc_connection()) return false;
+                if(stmt_ == NULL && !alloc_statement()) return false;
                 return true;
             }
 
@@ -131,13 +133,14 @@ namespace g80 {
             }
 
             auto disconnect() -> bool {
+                if(!dealloc_statement()) return false;
                 if(!dealloc_connection()) return false;
                 if(!dealloc_env()) return false;
                 return true;
             }
 
-            auto exec(SQLWCHAR *str) -> RETCODE {
-                return SQLExecDirect(stmt_, str, SQL_NTS);
+            auto exec(SQLWCHAR *command) -> RETCODE {
+                return SQLExecDirect(stmt_, command, SQL_NTS);
             }
         };
     }
