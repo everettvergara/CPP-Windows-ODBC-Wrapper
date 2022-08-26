@@ -11,6 +11,7 @@
 namespace g80 {
     namespace odbc {
 
+        #define SQL_QUERY_SIZE 8192
         #define MESSAGE_SIZE 1024
 
         class odbc {
@@ -18,6 +19,7 @@ namespace g80 {
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
             SQLHSTMT    stmt_{NULL};
+            WCHAR       query_{NULL};
             WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
             WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
             SQLINTEGER  last_error_{0};
@@ -78,11 +80,14 @@ namespace g80 {
             }
 
             auto alloc_statement() -> bool {
-                if(!stmt_) return true;
+                if(stmt_) return true;
                 return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLAllocHandle(SQL_HANDLE_STMT, dbc_, &stmt_));
             }
 
             auto dealloc_statement() -> bool {
+                if(!stmt_) return true;
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_STMT, stmt_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(std::wstring(L"Could not free up stmt handle") + std::wstring(std::to_wstring(rc)));
+                stmt_ = NULL;
                 return true;
             }
 
@@ -131,8 +136,8 @@ namespace g80 {
                 return true;
             }
 
-            auto exec(const std::wstring &stmt) -> RETCODE {
-                SQLExecDirect(hStmt, wszInput, SQL_NTS);
+            auto exec(SQLWCHAR *str) -> RETCODE {
+                return SQLExecDirect(stmt_, str, SQL_NTS);
             }
         };
     }
