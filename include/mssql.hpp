@@ -77,6 +77,15 @@ namespace g80 {
                 return true;
             }
 
+            auto alloc_statement() -> bool {
+                if(!stmt_) return true;
+                return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLAllocHandle(SQL_HANDLE_STMT, dbc_, &stmt_));
+            }
+
+            auto dealloc_statement() -> bool {
+                return true;
+            }
+
         public:
 
             odbc() {}
@@ -120,7 +129,11 @@ namespace g80 {
                 if(!dealloc_connection()) return false;
                 if(!dealloc_env()) return false;
                 return true;
-           }
+            }
+
+            auto exec(const std::wstring &stmt) -> RETCODE {
+                SQLExecDirect(hStmt, wszInput, SQL_NTS);
+            }
         };
     }
 }

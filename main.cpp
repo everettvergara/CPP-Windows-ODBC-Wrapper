@@ -179,7 +179,7 @@ int main(int argc, char_t **argv)
             wprintf(L"SQL COMMAND>");
             continue;
         }
-        RetCode = SQLExecDirect(hStmt,wszInput, SQL_NTS);
+        RetCode = SQLExecDirect(hStmt, wszInput, SQL_NTS);
 
         switch(RetCode)
         {
