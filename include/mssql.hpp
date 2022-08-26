@@ -31,7 +31,11 @@ namespace g80 {
                 SQLSMALLINT i = 0;
                 while(SQLGetDiagRec(hType, hHandle, ++i, 
                         last_state_, &last_error_, last_message_, 
-                        MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+                        MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS) {
+                    
+                    std::wcout << get_formatted_last_error();
+
+                }
             }
 
             auto set_user_error(const std::wstring &error_msg) -> bool {
