@@ -93,7 +93,6 @@ namespace g80 {
             auto init() -> bool {
                 if(env_ == NULL && !alloc_env()) return false;
                 if(dbc_ == NULL && !alloc_connection()) return false;
-                if(stmt_ == NULL && !alloc_statement()) return false;
                 return true;
             }
 
@@ -122,18 +121,20 @@ namespace g80 {
 
             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
                 if(!init()) return false;
-                return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLConnect(dbc_, 
+                if(!handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLConnect(dbc_, 
                     const_cast<wchar_t *>(server.c_str()), server.size(), 
                     const_cast<wchar_t *>(user.c_str()), user.size(), 
-                    const_cast<wchar_t *>(passwd.c_str()), passwd.size()));
+                    const_cast<wchar_t *>(passwd.c_str()), passwd.size()))) return false;
+                return alloc_statement();
             }
 
             auto connect_by_file_dsn(const std::wstring &dsn, const std::wstring &user, const std::wstring &passwd) -> bool {
                 if(!init()) return false;
                 std::wstring conn_str = L"FILEDSN=" + dsn  + L"; UID=" + user + L"; PWD=" + passwd; 
-                return handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLDriverConnect(dbc_, NULL, 
+                if(!handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLDriverConnect(dbc_, NULL, 
                     const_cast<wchar_t *>(conn_str.c_str()), conn_str.size(), 
-                    NULL, 0, NULL, SQL_DRIVER_NOPROMPT));
+                    NULL, 0, NULL, SQL_DRIVER_NOPROMPT))) return false;
+                return alloc_statement();
             }
 
             auto disconnect() -> bool {
