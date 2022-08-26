@@ -119,15 +119,15 @@ namespace g80 {
             //     return {last_state_, last_message_, last_error_};
             // }
 
-            inline auto get_formatted_last_error() const -> std::wstring {
-                // std::wstring out = last_state_;
-                //     out += L": ("; 
-                //     out += std::to_wstring(last_error_);
-                //     out += L") ";
-                //     out += last_message_;
-                //     out += L"\n";
-                return out;
-            }
+            // inline auto get_formatted_last_error() const -> std::wstring {
+            //     // std::wstring out = last_state_;
+            //     //     out += L": ("; 
+            //     //     out += std::to_wstring(last_error_);
+            //     //     out += L") ";
+            //     //     out += last_message_;
+            //     //     out += L"\n";
+            //     return out;
+            // }
 
             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
                 if(!init()) return false;
@@ -160,12 +160,13 @@ namespace g80 {
 
             auto handle_exec(RETCODE rc) -> bool {
 
-                switch(rc) {
-                    case SQL_SUCCESS_WITH_INFO: 
-                        check_for_message(stmt_, SQL_HANDLE_STMT, rc);
-                    case SQL_SUCCESS:
-                        // check_for_mess
-                }
+                // switch(rc) {
+                //     case SQL_SUCCESS_WITH_INFO: 
+                //         check_for_message(stmt_, SQL_HANDLE_STMT, rc);
+                //     case SQL_SUCCESS:
+                //         // check_for_mess
+                // }
+                return true;
             }
         };
     }
