@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <tuple>
+#include <vector>
 #include <string>
 #include <exception>
 #include <sqltypes.h>
@@ -20,32 +21,38 @@ namespace g80 {
             SQLINTEGER  last_error_{0};
         };
 
-
         class odbc {
         private:
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
             SQLHSTMT    stmt_{NULL};
-            WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
-            WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
-            SQLINTEGER  last_error_{0};
+            std::vector<odbc_error_message> msg_;
+            // WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
+            // WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
+            // SQLINTEGER  last_error_{0};
+
+            auto clear_last_message() -> void {
+                msg_.clear();
+            }
 
             void check_for_message(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE rc) {
                 if(rc == SQL_INVALID_HANDLE) {
-                    wcscpy(last_message_, L"Invalid Handle!");
+                    set_user_error(L"Invalid Handle");
                     return;
                 } 
                 SQLSMALLINT i = 0;
-                while(SQLGetDiagRec(hType, hHandle, ++i, 
-                        last_state_, &last_error_, last_message_, 
-                        MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+                // while(SQLGetDiagRec(hType, hHandle, ++i, 
+                //         last_state_, &last_error_, last_message_, 
+                //         MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
             }
 
             auto set_user_error(const std::wstring &error_msg) -> bool {
-                wcscpy(last_message_, error_msg.c_str()); 
-                std::fill_n(last_state_, SQL_SQLSTATE_SIZE, TCHAR('?')); 
-                last_state_[SQL_SQLSTATE_SIZE] = TCHAR('\0');
-                last_error_ = 50001;
+
+                //msg_.emplace_back(odbc_error_message{L""});
+                // wcscpy(last_message_, error_msg.c_str()); 
+                // std::fill_n(last_state_, SQL_SQLSTATE_SIZE, TCHAR('?')); 
+                // last_state_[SQL_SQLSTATE_SIZE] = TCHAR('\0');
+                // last_error_ = 50001;
                 return false;
             }
 
@@ -108,17 +115,17 @@ namespace g80 {
             auto operator=(odbc &&) -> odbc & = delete;
             ~odbc() {disconnect();}
 
-            inline auto get_last_error() const -> const std::tuple<const WCHAR *, const WCHAR *, SQLINTEGER> {
-                return {last_state_, last_message_, last_error_};
-            }
+            // inline auto get_last_error() const -> const std::tuple<const WCHAR *, const WCHAR *, SQLINTEGER> {
+            //     return {last_state_, last_message_, last_error_};
+            // }
 
             inline auto get_formatted_last_error() const -> std::wstring {
-                std::wstring out = last_state_;
-                    out += L": ("; 
-                    out += std::to_wstring(last_error_);
-                    out += L") ";
-                    out += last_message_;
-                    out += L"\n";
+                // std::wstring out = last_state_;
+                //     out += L": ("; 
+                //     out += std::to_wstring(last_error_);
+                //     out += L") ";
+                //     out += last_message_;
+                //     out += L"\n";
                 return out;
             }
 
