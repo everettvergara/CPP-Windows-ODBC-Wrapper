@@ -34,9 +34,15 @@ namespace g80 {
                 
                 SQLSMALLINT i = 0;
                 odbc_error *m = nullptr; 
-                do m = err_.get_next_slot();
-                while(SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_error, m->last_message, ERROR_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+                do {
+                    m = err_.get_next_slot();
+                    rc = SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_error, m->last_message, ERROR_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
+                    if(rc == SQL_SUCCESS) {
+                        std::wcout << "hello: " << m->last_message << "\n";
+                    }
+                } while(rc == SQL_SUCCESS);
                 err_.pop_last_slot();
+                // std::wcout << "hello: " << err_.size() << "\n";
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {

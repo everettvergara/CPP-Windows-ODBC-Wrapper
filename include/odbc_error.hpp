@@ -67,7 +67,8 @@ namespace g80 {
 
             auto get_next_slot() -> odbc_error * {
                 if(ix_ == max_errors_) return nullptr;
-                return &errors_[++ix_];
+                auto ptr = &errors_[++ix_];
+                return ptr;
             }
 
             auto pop_last_slot() -> bool {
