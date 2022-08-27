@@ -10,6 +10,10 @@ auto main(int argc, const char *argv[]) -> int {
     if(!sqlca.connect_by_dsn(L"test", L"sa", L"Kerberos2014!")) 
         std::wcout << sqlca.get_formatted_last_msg();
     std::wcout << sqlca.get_formatted_last_msg();
+
+    wchar_t command[1024] {L"select * from users"};
+    if(!sqlca.exec(command))
+        std::wcout << sqlca.get_formatted_last_msg();
     
     // if(!sqlca.disconnect())
     //     std::wcout << sqlca.get_formatted_last_error();

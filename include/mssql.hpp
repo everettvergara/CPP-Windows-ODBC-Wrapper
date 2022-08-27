@@ -165,7 +165,7 @@ namespace g80 {
                     case SQL_SUCCESS:
                         if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
                         if(col_count > 0) {
-                        
+                            bind_columns(col_count);
                         }
                 }
 
@@ -198,25 +198,35 @@ namespace g80 {
 
             auto bind_columns(SQLSMALLINT col_count) -> bool {
                 
+                std::wcout << "col count: " << col_count << "\n";
                 std::vector<col_binding> col_bindings(col_count);
                 
                 for(SQLSMALLINT c{1}; c <= col_count; ++c) {
 
+                    std::wcout << "col ctr: " << c << "\n";
                     SQLLEN col_type;
                     if(!handle_ret_code(stmt_,  SQL_HANDLE_STMT,
                         SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
                             NULL, 0, NULL, &col_type))) return false;
+
+                    std::wcout << "col type: " << col_type << "\n";
 
                     SQLLEN column_size;
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
                             SQLColAttribute(stmt_, c, SQL_DESC_LENGTH,
                                 NULL, 0, NULL, &column_size))) return false;
 
+                    std::wcout << "col size: " << column_size << "\n";
+
                     SQLSMALLINT column_name_length;
                     WCHAR column_name[DISPLAY_COLUMN_MAX+1];
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
                             SQLColAttribute(stmt_, c, SQL_DESC_NAME,
                                 column_name, DISPLAY_COLUMN_MAX, &column_name_length, NULL))) return false;
+
+
+                    std::wcout << "col name: " << column_name << "\n";                                
+                    std::wcout << "col name length: " << column_name_length << "\n\n\n";                                
                 }
 
                 
@@ -298,9 +308,6 @@ namespace g80 {
                 //     if (pThisBinding->display_column_size < NULL_COLUMN_SIZE)
                 //         pThisBinding->display_column_size = NULL_COLUMN_SIZE;
 
-                }
-
-                return true;
             }
         };
     }
