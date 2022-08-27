@@ -14,7 +14,7 @@ auto main(int argc, const char *argv[]) -> int {
     wchar_t command[1024] {L"select * from users"};
     if(!sqlca.exec(command))
         std::wcout << sqlca.get_formatted_last_msg();
-    
+
     // if(!sqlca.disconnect())
     //     std::wcout << sqlca.get_formatted_last_error();
 
