@@ -15,6 +15,7 @@ namespace g80 {
             WCHAR       last_message[EXEC_MESSAGE_SIZE];
             WCHAR       last_state[SQL_SQLSTATE_SIZE+1];
             SQLINTEGER  last_exec_msg;
+            SQLLEN      last_row_count;
 
             odbc_exec_msg() {};
             odbc_exec_msg(const WCHAR *msg, const WCHAR *state, SQLINTEGER exec_msg) : last_exec_msg(exec_msg) {

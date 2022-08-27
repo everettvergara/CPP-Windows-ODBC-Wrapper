@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <tuple>
+#include <algorithm>
 #include <memory>
 #include <vector>
 #include <string>
@@ -19,6 +20,16 @@ namespace g80 {
     namespace odbc {
 
         #define SQL_QUERY_SIZE 8192
+        #define NULL_SIZE      6
+        #define DISPLAY_MAX 50        
+
+        typedef struct STR_BINDING {
+            SQLSMALLINT         cDisplaySize;
+            WCHAR               *wszBuffer;
+            SQLLEN              indPtr;
+            BOOL                fChar;
+            struct STR_BINDING  *sNext;
+        } BINDING;
 
         class odbc {
         
@@ -152,9 +163,25 @@ namespace g80 {
                 return true;
             }
 
-            auto exec(wchar_t *command) -> RETCODE {
+            auto exec(wchar_t *command) -> bool {
                 msg_.reset();
-                return SQLExecDirect(stmt_, command, SQL_NTS);
+
+                RETCODE rc = SQLExecDirect(stmt_, command, SQL_NTS);
+                SQLSMALLINT col_count;
+                switch(rc) {
+                    case SQL_SUCCESS_WITH_INFO:
+                        check_for_message(stmt_, SQL_HANDLE_STMT, rc);
+                    case SQL_SUCCESS:
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
+                        if(col_count > 0) {
+                        
+                        }
+                }
+
+
+
+
+                return true;
             }
 
             auto handle_exec(RETCODE rc) -> bool {
@@ -165,6 +192,97 @@ namespace g80 {
                 //     case SQL_SUCCESS:
                 //         // check_for_mess
                 // }
+                return true;
+            }
+
+
+            auto bind(SQLSMALLINT col_count, BINDING **ppBinding) -> bool {
+                
+                SQLSMALLINT     c;
+                BINDING         *pThisBinding, *pLastBinding = NULL;
+                SQLLEN          cchDisplay, ssType;
+                SQLSMALLINT     cchColumnNameLength;
+
+                for (c = 1; c <= col_count; ++c) {
+
+                    pThisBinding = (BINDING *)(malloc(sizeof(BINDING)));
+                    if (!(pThisBinding)) {
+                        set_user_error(L"Out of memory!");
+                        return false;
+                    }
+
+                    if (c == 1) *ppBinding = pThisBinding;
+                    else pLastBinding->sNext = pThisBinding;
+                    pLastBinding = pThisBinding;
+
+
+                    // Figure out the display length of the column (we will
+                    // bind to char since we are only displaying data, in general
+                    // you should bind to the appropriate C type if you are going
+                    // to manipulate data since it is much faster...)
+
+                    if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
+                            SQLColAttribute(stmt_, c, SQL_DESC_DISPLAY_SIZE,
+                                NULL, 0, NULL, &cchDisplay))) return false;
+
+
+                    // Figure out if this is a character or numeric column; this is
+                    // used to determine if we want to display the data left- or right-
+                    // aligned.
+
+                    // SQL_DESC_CONCISE_TYPE maps to the 1.x SQL_COLUMN_TYPE.
+                    // This is what you must use if you want to work
+                    // against a 2.x driver.
+
+                    if(!handle_ret_code(stmt_,  SQL_HANDLE_STMT,
+                            SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
+                                NULL, 0, NULL, &ssType))) return false;
+
+                    // pThisBinding->fChar = (ssType == SQL_CHAR ||
+                    //                         ssType == SQL_VARCHAR ||
+                    //                         ssType == SQL_LONGVARCHAR);
+
+                    pThisBinding->sNext = NULL;
+
+                    // Arbitrary limit on display size
+                    if (cchDisplay > DISPLAY_MAX)
+                        cchDisplay = DISPLAY_MAX;
+
+                    // Allocate a buffer big enough to hold the text representation
+                    // of the data.  Add one character for the null terminator
+
+                    pThisBinding->wszBuffer = (WCHAR *)malloc((cchDisplay+1) * sizeof(WCHAR));
+
+                    if (!(pThisBinding->wszBuffer)) {
+                        set_user_error(L"Out of memory!");
+                        return false;
+                    }
+
+                    // Map this buffer to the driver's buffer.   At Fetch time,
+                    // the driver will fill in this data.  Note that the size is
+                    // count of bytes (for Unicode).  All ODBC functions that take
+                    // SQLPOINTER use count of bytes; all functions that take only
+                    // strings use count of characters.
+
+                    // if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
+                    //         SQLBindCol(stmt_, c, SQL_C_TCHAR,
+                    //             (SQLPOINTER) pThisBinding->wszBuffer,
+                    //             sizeof(wchar_t) * (cchDisplay + 1), &pThisBinding->indPtr))) 
+                    //             return false;
+
+                    // Now set the display size that we will use to display
+                    // the data.   Figure out the length of the column name
+
+                    if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
+                            SQLColAttribute(stmt_, c, SQL_DESC_NAME,
+                                NULL, 0, &cchColumnNameLength, NULL))) return false;
+
+                    pThisBinding->cDisplaySize = 1; //std::max(1, 2);
+                    if (pThisBinding->cDisplaySize < NULL_SIZE)
+                        pThisBinding->cDisplaySize = NULL_SIZE;
+
+                }
+
                 return true;
             }
         };
