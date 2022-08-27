@@ -49,15 +49,15 @@ namespace g80 {
                 max_errors_(max_errors), 
                 errors_(std::unique_ptr<odbc_error[]>(new odbc_error[max_errors_])) {}
             
-            auto begin() -> iterator {
+            auto begin() const -> iterator {
                 return iterator(&errors_[0]);
             }
             
-            auto end() -> iterator {
+            auto end() const -> iterator {
                 return iterator(&errors_[ix_]);
             }
 
-            auto size() -> int {
+            auto size() const -> int {
                 return ix_;
             }
             

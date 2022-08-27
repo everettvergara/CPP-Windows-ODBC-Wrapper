@@ -31,12 +31,12 @@ namespace g80 {
 
             auto check_for_message(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> void {
                 if(rc == SQL_INVALID_HANDLE) {set_user_error(L"Invalid Handle"); return;}
+                
                 SQLSMALLINT i = 0;
-                do {
-                    auto m = err_.get_next_slot();
-                    RETCODE rc = SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_error, m->last_message, ERROR_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
-               } while(rc != SQL_SUCCESS);
-               err_.pop_last_slot();
+                odbc_error *m = nullptr; 
+                do m = err_.get_next_slot();
+                while(SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_error, m->last_message, ERROR_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+                err_.pop_last_slot();
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {
@@ -108,19 +108,22 @@ namespace g80 {
             auto operator=(odbc &&) -> odbc & = delete;
             ~odbc() {disconnect();}
 
-            // inline auto get_last_error() const -> const std::tuple<const WCHAR *, const WCHAR *, SQLINTEGER> {
-            //     return {last_state_, last_message_, last_error_};
-            // }
+            inline auto get_err() const -> const odbc_error_mgr & {
+                return err_;
+            }
 
-            // inline auto get_formatted_last_error() const -> std::wstring {
-            //     // std::wstring out = last_state_;
-            //     //     out += L": ("; 
-            //     //     out += std::to_wstring(last_error_);
-            //     //     out += L") ";
-            //     //     out += last_message_;
-            //     //     out += L"\n";
-            //     return out;
-            // }
+            inline auto get_formatted_last_error() const -> std::wstring {
+                std::wstring out;
+                for(const auto &e : err_) {
+                    out += e.last_state;
+                    out += L": ("; 
+                    out += e.last_error;
+                    out += L") ";
+                    out += e.last_message;
+                    out += L"\n";
+                }
+                return out;
+            }
 
             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
                 if(!init()) return false;
