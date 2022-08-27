@@ -40,20 +40,33 @@ namespace g80 {
             auto get_current_message() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_message;}
             auto get_current_state() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_state;}       
             auto get_current_error() -> SQLINTEGER * {return ix_ < 0 ? NULL : &errors_[ix_].last_error;}       
+            
             auto next() -> void {
                 ix_ = ix_ == max_errors_ ? ix_ : ix_ + 1;
             }
+            
             auto prev() -> void {
-                if(ix_ == -1) return false;
-                --ix_;
-                return true;
+                ix_ = ix_ == -1 ? ix_ : ix_ - 1;
             }
-            auto reset() -> void {ix_ = -1;}
-            // auto add() -> bool {
-            //     if(errors_.size() == max_errors_) return false;
-            //     errors_.emplace_back();
-            //     return true;
-            // }
+
+            auto reset() -> void {
+                ix_ = -1;
+            }
+
+            auto get_formatted_last_error() const -> std::wstring {
+                std::wstring out;
+                
+                for(int i{0}; i <= ix_; ++i) {
+                    out = errors_[i].last_state;
+                        out += L": ("; 
+                        out += std::to_wstring(errors_[i].last_error);
+                        out += L") ";
+                        out += errors_[i].last_message;
+                        out += L"\n";
+                }
+
+                return out;
+            }            
         };
 
         class odbc {
