@@ -15,16 +15,45 @@ namespace g80 {
         #define SQL_QUERY_SIZE 8192
         #define MESSAGE_SIZE 1024
 
-        struct odbc_error_message {
+        struct odbc_error {
             WCHAR       last_message[MESSAGE_SIZE];
             WCHAR       last_state[SQL_SQLSTATE_SIZE+1];
             SQLINTEGER  last_error;
 
-            odbc_error_message() {};
-            odbc_error_message(const WCHAR *msg, const WCHAR *state, SQLINTEGER error) : last_error(error) {
+            odbc_error() {};
+            odbc_error(const WCHAR *msg, const WCHAR *state, SQLINTEGER error) : last_error(error) {
                 wcscpy(last_message, msg);
                 wcscpy(last_state, state);
             }
+        };
+
+        class odbc_error_mgr {
+            
+            size_t max_errors_;
+            int ix_ = -1;
+            std::vector<odbc_error> errors_;
+
+        public:
+            odbc_error_mgr(size_t max_errors) : max_errors_(max_errors), errors_(max_errors_) {}
+
+            auto get_current_ix() -> int {return ix_;}
+            auto get_current_message() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_message;}
+            auto get_current_state() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_state;}       
+            auto get_current_error() -> SQLINTEGER * {return ix_ < 0 ? NULL : &errors_[ix_].last_error;}       
+            auto next() -> void {
+                ix_ = ix_ == max_errors_ ? ix_ : ix_ + 1;
+            }
+            auto prev() -> void {
+                if(ix_ == -1) return false;
+                --ix_;
+                return true;
+            }
+            auto reset() -> void {ix_ = -1;}
+            // auto add() -> bool {
+            //     if(errors_.size() == max_errors_) return false;
+            //     errors_.emplace_back();
+            //     return true;
+            // }
         };
 
         class odbc {
@@ -32,7 +61,6 @@ namespace g80 {
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
             SQLHSTMT    stmt_{NULL};
-            std::vector<odbc_error_message> msg_;
             // WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
             // WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
             // SQLINTEGER  last_error_{0};
@@ -44,18 +72,18 @@ namespace g80 {
                 } 
                 SQLSMALLINT i = 0;
                 do {
-                    auto &m = msg_.emplace_back();
+                    // auto &m = msg_.emplace_back();
 
-                    RETCODE rc = SQLGetDiagRec(hType, hHandle, ++i, m.last_state, &m.last_error, m.last_message, 
-                                    MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
+                    // RETCODE rc = SQLGetDiagRec(hType, hHandle, ++i, m.last_state, &m.last_error, m.last_message, 
+                    //                 MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
                     
-                    if(rc != SQL_SUCCESS) {msg_.pop_back(); break;}                
+                    // if(rc != SQL_SUCCESS) {msg_.pop_back(); break;}                
 
                } while(true);
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {
-                msg_.emplace_back(L"Custom Error here", L"", 50001);
+                // msg_.emplace_back(L"Custom Error here", L"", 50001);
                 return false;
             }
 
