@@ -264,11 +264,11 @@ namespace g80 {
                     // SQLPOINTER use count of bytes; all functions that take only
                     // strings use count of characters.
 
-                    // if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
-                    //         SQLBindCol(stmt_, c, SQL_C_TCHAR,
-                    //             (SQLPOINTER) pThisBinding->wszBuffer,
-                    //             sizeof(wchar_t) * (cchDisplay + 1), &pThisBinding->indPtr))) 
-                    //             return false;
+                    if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
+                            SQLBindCol(stmt_, c, SQL_C_TCHAR,
+                                (SQLPOINTER) pThisBinding->wszBuffer,
+                                sizeof(wchar_t) * (cchDisplay + 1), &pThisBinding->indPtr))) 
+                                return false;
 
                     // Now set the display size that we will use to display
                     // the data.   Figure out the length of the column name
@@ -277,7 +277,7 @@ namespace g80 {
                             SQLColAttribute(stmt_, c, SQL_DESC_NAME,
                                 NULL, 0, &cchColumnNameLength, NULL))) return false;
 
-                    pThisBinding->cDisplaySize = 1; //std::max(1, 2);
+                    pThisBinding->cDisplaySize = std::max((SQLSMALLINT)cchDisplay, cchColumnNameLength);
                     if (pThisBinding->cDisplaySize < NULL_SIZE)
                         pThisBinding->cDisplaySize = NULL_SIZE;
 
