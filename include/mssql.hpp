@@ -29,18 +29,14 @@ namespace g80 {
             SQLHSTMT    stmt_{NULL};
             odbc_error_mgr  err_;
 
-            void check_for_message(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) {
-                if(rc == SQL_INVALID_HANDLE) {
-                    set_user_error(L"Invalid Handle");
-                    return;
-                } 
+            auto check_for_message(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> void {
+                if(rc == SQL_INVALID_HANDLE) {set_user_error(L"Invalid Handle"); return;}
                 SQLSMALLINT i = 0;
                 do {
                     auto m = err_.get_next_slot();
                     RETCODE rc = SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_error, m->last_message, ERROR_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
-                    if(rc != SQL_SUCCESS) {m.pop_back(); break;}                
-
-               } while(true);
+               } while(rc != SQL_SUCCESS);
+               err_.pop_last_slot();
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {

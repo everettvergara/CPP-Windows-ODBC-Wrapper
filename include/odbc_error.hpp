@@ -26,7 +26,6 @@ namespace g80 {
         class odbc_error_mgr {
             
             size_t ix_{0};
-            size_t size_{0};
             size_t max_errors_;
             std::unique_ptr<odbc_error[]> errors_;
 
@@ -55,20 +54,26 @@ namespace g80 {
             }
             
             auto end() -> iterator {
-                return iterator(&errors_[size_]);
+                return iterator(&errors_[ix_]);
             }
 
-            auto get_current_ix() -> int {
+            auto size() -> int {
                 return ix_;
             }
             
             auto reset() -> void {
-                size_ = ix_ = 0;
+                ix_ = 0;
             }
 
             auto get_next_slot() -> odbc_error * {
                 if(ix_ == max_errors_) return nullptr;
                 return &errors_[++ix_];
+            }
+
+            auto pop_last_slot() -> bool {
+                if(ix_ == 0) return false;
+                --ix_;
+                return true;
             }
         };
     }
