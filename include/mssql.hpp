@@ -30,13 +30,15 @@ namespace g80 {
 
         class odbc_error_mgr {
             
-            size_t ix_ = 0;
+            size_t ix_{0};
+            size_t size_{0};
             size_t max_errors_;
             std::unique_ptr<odbc_error[]> errors_;
 
             struct iterator {
             private:
                 odbc_error *ptr;
+                
             public:
                 iterator(odbc_error *p) : ptr(p) {}
                 auto operator*() -> odbc_error & {return *ptr;}
@@ -49,46 +51,30 @@ namespace g80 {
 
         public:
 
-            odbc_error_mgr(size_t max_errors) : 
+            odbc_error_mgr(size_t max_errors = 5) : 
                 max_errors_(max_errors), 
                 errors_(std::unique_ptr<odbc_error[]>(new odbc_error[max_errors_])) {}
             
-            auto begin() -> iterator {return iterator(&errors_[0]);}
-            auto end() -> iterator {return iterator(&errors_[ix_]);}
-
-            auto get_current_ix() -> int {return ix_;}
-            // auto get_current_message() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_message;}
-            // auto get_current_state() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_state;}       
-            // auto get_current_error() -> SQLINTEGER * {return ix_ < 0 ? NULL : &errors_[ix_].last_error;}       
+            auto begin() -> iterator {
+                return iterator(&errors_[0]);
+            }
             
-            // auto next() -> void {
-            //     ix_ = ix_ == static_cast<int>(max_errors_) ? ix_ : ix_ + 1;
-            // }
+            auto end() -> iterator {
+                return iterator(&errors_[size_]);
+            }
+
+            auto get_current_ix() -> int {
+                return ix_;
+            }
             
-            // auto prev() -> void {
-            //     ix_ = ix_ == -1 ? ix_ : ix_ - 1;
-            // }
+            auto reset() -> void {
+                size_ = ix_ = 0;
+            }
 
-            // auto reset() -> void {
-            //     ix_ = -1;
-            // }
-
-            // auto get_raw_errors() const -> const std::vector<odbc_error> & {
-            //     return errors_;
-            // }
-
-            // auto get_formatted_errors() const -> std::wstring {
-            //     std::wstring out;
-            //     for(int i{0}; i <= ix_; ++i) {
-            //         out = errors_[i].last_state;
-            //             out += L": ("; 
-            //             out += std::to_wstring(errors_[i].last_error);
-            //             out += L") ";
-            //             out += errors_[i].last_message;
-            //             out += L"\n";
-            //     }
-            //     return out;
-            // }
+            auto get_next_slot() -> odbc_error * {
+                if(ix_ == max_errors_) return nullptr;
+                return &errors_[++ix_];
+            }
         };
 
         class odbc {
