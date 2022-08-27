@@ -33,7 +33,21 @@ namespace g80 {
             int ix_ = -1;
             std::vector<odbc_error> errors_;
 
+            struct iterator {
+            private:
+                odbc_error *ptr;
+            public:
+                iterator(odbc_error *p) : ptr(p) {}
+                auto operator*() -> odbc_error & {return *ptr;}
+                auto operator->() -> odbc_error * {return ptr;}
+                auto operator++() -> iterator & {++ptr; return *this;}
+                auto operator++(int) -> iterator {iterator t = *this; ++ptr; return t;}
+                friend auto operator==(const iterator &l, const iterator &r) -> bool {return l.ptr == r.ptr;}
+                friend auto operator!=(const iterator &l, const iterator &r) -> bool {return l.ptr != r.ptr;}
+            };       
+
         public:
+
             odbc_error_mgr(size_t max_errors) : max_errors_(max_errors), errors_(max_errors_) {}
 
             auto get_current_ix() -> int {return ix_;}
@@ -68,7 +82,7 @@ namespace g80 {
                         out += L"\n";
                 }
                 return out;
-            }     
+            }
         };
 
         class odbc {
