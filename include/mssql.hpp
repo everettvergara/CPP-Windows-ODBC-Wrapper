@@ -238,9 +238,7 @@ namespace g80 {
                             SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
                                 NULL, 0, NULL, &ssType))) return false;
 
-                    pThisBinding->fChar = (ssType == SQL_CHAR ||
-                                            ssType == SQL_VARCHAR ||
-                                            ssType == SQL_LONGVARCHAR);
+                    pThisBinding->fChar = ssType == SQL_CHAR || ssType == SQL_VARCHAR || ssType == SQL_LONGVARCHAR;
 
                     pThisBinding->sNext = NULL;
 
