@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <tuple>
+#include <memory>
 #include <vector>
 #include <string>
 #include <exception>
@@ -29,9 +30,9 @@ namespace g80 {
 
         class odbc_error_mgr {
             
+            size_t ix_ = 0;
             size_t max_errors_;
-            int ix_ = -1;
-            std::vector<odbc_error> errors_;
+            std::unique_ptr<odbc_error[]> errors_;
 
             struct iterator {
             private:
@@ -48,41 +49,46 @@ namespace g80 {
 
         public:
 
-            odbc_error_mgr(size_t max_errors) : max_errors_(max_errors), errors_(max_errors_) {}
+            odbc_error_mgr(size_t max_errors) : 
+                max_errors_(max_errors), 
+                errors_(std::unique_ptr<odbc_error[]>(new odbc_error[max_errors_])) {}
+            
+            auto begin() -> iterator {return iterator(&errors_[0]);}
+            auto end() -> iterator {return iterator(&errors_[ix_]);}
 
             auto get_current_ix() -> int {return ix_;}
-            auto get_current_message() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_message;}
-            auto get_current_state() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_state;}       
-            auto get_current_error() -> SQLINTEGER * {return ix_ < 0 ? NULL : &errors_[ix_].last_error;}       
+            // auto get_current_message() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_message;}
+            // auto get_current_state() -> WCHAR * {return ix_ < 0 ? NULL : errors_[ix_].last_state;}       
+            // auto get_current_error() -> SQLINTEGER * {return ix_ < 0 ? NULL : &errors_[ix_].last_error;}       
             
-            auto next() -> void {
-                ix_ = ix_ == max_errors_ ? ix_ : ix_ + 1;
-            }
+            // auto next() -> void {
+            //     ix_ = ix_ == static_cast<int>(max_errors_) ? ix_ : ix_ + 1;
+            // }
             
-            auto prev() -> void {
-                ix_ = ix_ == -1 ? ix_ : ix_ - 1;
-            }
+            // auto prev() -> void {
+            //     ix_ = ix_ == -1 ? ix_ : ix_ - 1;
+            // }
 
-            auto reset() -> void {
-                ix_ = -1;
-            }
+            // auto reset() -> void {
+            //     ix_ = -1;
+            // }
 
-            auto get_raw_errors() const -> const std::vector<odbc_error> & {
-                return errors_;
-            }
+            // auto get_raw_errors() const -> const std::vector<odbc_error> & {
+            //     return errors_;
+            // }
 
-            auto get_formatted_errors() const -> std::wstring {
-                std::wstring out;
-                for(int i{0}; i <= ix_; ++i) {
-                    out = errors_[i].last_state;
-                        out += L": ("; 
-                        out += std::to_wstring(errors_[i].last_error);
-                        out += L") ";
-                        out += errors_[i].last_message;
-                        out += L"\n";
-                }
-                return out;
-            }
+            // auto get_formatted_errors() const -> std::wstring {
+            //     std::wstring out;
+            //     for(int i{0}; i <= ix_; ++i) {
+            //         out = errors_[i].last_state;
+            //             out += L": ("; 
+            //             out += std::to_wstring(errors_[i].last_error);
+            //             out += L") ";
+            //             out += errors_[i].last_message;
+            //             out += L"\n";
+            //     }
+            //     return out;
+            // }
         };
 
         class odbc {
@@ -99,16 +105,16 @@ namespace g80 {
                     set_user_error(L"Invalid Handle");
                     return;
                 } 
-                SQLSMALLINT i = 0;
-                do {
-                    // auto &m = msg_.emplace_back();
+                // SQLSMALLINT i = 0;
+            //     do {
+            //         // auto &m = msg_.emplace_back();
 
-                    // RETCODE rc = SQLGetDiagRec(hType, hHandle, ++i, m.last_state, &m.last_error, m.last_message, 
-                    //                 MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
+            //         // RETCODE rc = SQLGetDiagRec(hType, hHandle, ++i, m.last_state, &m.last_error, m.last_message, 
+            //         //                 MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
                     
-                    // if(rc != SQL_SUCCESS) {msg_.pop_back(); break;}                
+            //         // if(rc != SQL_SUCCESS) {msg_.pop_back(); break;}                
 
-               } while(true);
+            //    } while(true);
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {
