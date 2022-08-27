@@ -16,9 +16,15 @@ namespace g80 {
         #define MESSAGE_SIZE 1024
 
         struct odbc_error_message {
-            WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
-            WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
-            SQLINTEGER  last_error_{0};
+            WCHAR       last_message[MESSAGE_SIZE];
+            WCHAR       last_state[SQL_SQLSTATE_SIZE+1];
+            SQLINTEGER  last_error;
+
+            odbc_error_message() {};
+            odbc_error_message(const WCHAR *msg, const WCHAR *state, SQLINTEGER error) : last_error(error) {
+                wcscpy(last_message, msg);
+                wcscpy(last_state, state);
+            }
         };
 
         class odbc {
@@ -31,10 +37,6 @@ namespace g80 {
             // WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
             // SQLINTEGER  last_error_{0};
 
-            auto clear_last_message() -> void {
-                msg_.clear();
-            }
-
             void check_for_message(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE rc) {
                 if(rc == SQL_INVALID_HANDLE) {
                     set_user_error(L"Invalid Handle");
@@ -46,9 +48,14 @@ namespace g80 {
                 //         MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
             }
 
-            auto set_user_error(const std::wstring &error_msg) -> bool {
+            auto set_user_error(const WCHAR *error_msg) -> bool {
 
-                //msg_.emplace_back(odbc_error_message{L""});
+                // odbc_error_message m;
+                // wcscpy(m.last_message, error_msg);
+                // wcscpy(m.last_state, L"?????");
+                // m.last_error = 50001;
+
+                msg_.emplace_back(L"Custom Error here", L"", 50001);
                 // wcscpy(last_message_, error_msg.c_str()); 
                 // std::fill_n(last_state_, SQL_SQLSTATE_SIZE, TCHAR('?')); 
                 // last_state_[SQL_SQLSTATE_SIZE] = TCHAR('\0');
@@ -83,7 +90,7 @@ namespace g80 {
 
             auto dealloc_env() -> bool {
                 if(env_ == NULL) return true;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(std::wstring(L"Could not free up env handle") + std::wstring(std::to_wstring(rc)));
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not free up env handle");
                 env_ = NULL;
                 return true;
             }
@@ -95,7 +102,7 @@ namespace g80 {
 
             auto dealloc_statement() -> bool {
                 if(stmt_ == NULL) return true;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_STMT, stmt_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(std::wstring(L"Could not free up stmt handle") + std::wstring(std::to_wstring(rc)));
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_STMT, stmt_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not free up stmt handle");
                 stmt_ = NULL;
                 return true;
             }
