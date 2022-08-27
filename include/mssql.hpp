@@ -53,9 +53,12 @@ namespace g80 {
                 ix_ = -1;
             }
 
-            auto get_formatted_last_error() const -> std::wstring {
+            auto get_raw_errors() const -> const std::vector<odbc_error> & {
+                return errors_;
+            }
+
+            auto get_formatted_errors() const -> std::wstring {
                 std::wstring out;
-                
                 for(int i{0}; i <= ix_; ++i) {
                     out = errors_[i].last_state;
                         out += L": ("; 
@@ -64,9 +67,8 @@ namespace g80 {
                         out += errors_[i].last_message;
                         out += L"\n";
                 }
-
                 return out;
-            }            
+            }     
         };
 
         class odbc {
