@@ -7,8 +7,8 @@ auto main(int argc, const char *argv[]) -> int {
 
     odbc sqlca;
 
-    if(!sqlca.connect_by_dsn(L"test", L"sa", L"Kerberos2014!")) 
-        std::wcout << "ERROR";
+    if(!sqlca.connect_by_dsn(L"test", L"sa", L"Kerberos2014!x")) 
+        std::wcout << sqlca.get_formatted_last_error();
     
     // if(!sqlca.disconnect())
     //     std::wcout << sqlca.get_formatted_last_error();
