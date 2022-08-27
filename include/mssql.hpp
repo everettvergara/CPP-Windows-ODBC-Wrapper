@@ -19,17 +19,8 @@
 namespace g80 {
     namespace odbc {
 
-        #define SQL_QUERY_SIZE 8192
-        #define NULL_SIZE      6
-        #define DISPLAY_MAX 50        
+        #define SQL_QUERY_SIZE      8192
 
-        typedef struct STR_BINDING {
-            SQLSMALLINT         cDisplaySize;
-            WCHAR               *wszBuffer;
-            SQLLEN              indPtr;
-            BOOL                fChar;
-            struct STR_BINDING  *sNext;
-        } BINDING;
 
         class odbc {
         
@@ -111,7 +102,7 @@ namespace g80 {
 
         public:
 
-            odbc(const size_t max_err = 5) : msg_(max_err) {}
+            odbc(const size_t max_err = 60) : msg_(max_err) {}
             odbc(const odbc &) = delete;
             odbc(odbc &&) = delete;
             auto operator=(const odbc &) -> odbc & = delete;
@@ -195,89 +186,117 @@ namespace g80 {
                 return true;
             }
 
-
-            auto bind(SQLSMALLINT col_count, BINDING **ppBinding) -> bool {
                 
-                SQLSMALLINT     c;
-                BINDING         *pThisBinding, *pLastBinding = NULL;
-                SQLLEN          cchDisplay, ssType;
-                SQLSMALLINT     cchColumnNameLength;
+            #define NULL_COLUMN_SIZE    6
+            #define DISPLAY_COLUMN_MAX  50
+            struct col_binding {    
+                SQLLEN                      column_size;
+                SQLSMALLINT                 column_display_size;
+                SQLLEN                      column_type;
+                std::unique_ptr<WCHAR[]>    buffer{nullptr};
+            };
 
-                for (c = 1; c <= col_count; ++c) {
+            auto bind_columns(SQLSMALLINT col_count) -> bool {
+                
+                std::vector<col_binding> col_bindings(col_count);
+                
+                for(SQLSMALLINT c{1}; c <= col_count; ++c) {
 
-                    pThisBinding = (BINDING *)(malloc(sizeof(BINDING)));
-                    if (!(pThisBinding)) {
-                        set_user_error(L"Out of memory!");
-                        return false;
-                    }
-
-                    if (c == 1) *ppBinding = pThisBinding;
-                    else pLastBinding->sNext = pThisBinding;
-                    pLastBinding = pThisBinding;
-
-
-                    // Figure out the display length of the column (we will
-                    // bind to char since we are only displaying data, in general
-                    // you should bind to the appropriate C type if you are going
-                    // to manipulate data since it is much faster...)
-
-                    if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
-                            SQLColAttribute(stmt_, c, SQL_DESC_DISPLAY_SIZE,
-                                NULL, 0, NULL, &cchDisplay))) return false;
-
-
-                    // Figure out if this is a character or numeric column; this is
-                    // used to determine if we want to display the data left- or right-
-                    // aligned.
-
-                    // SQL_DESC_CONCISE_TYPE maps to the 1.x SQL_COLUMN_TYPE.
-                    // This is what you must use if you want to work
-                    // against a 2.x driver.
-
+                    SQLLEN col_type;
                     if(!handle_ret_code(stmt_,  SQL_HANDLE_STMT,
-                            SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
-                                NULL, 0, NULL, &ssType))) return false;
+                        SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
+                            NULL, 0, NULL, &col_type))) return false;
 
-                    pThisBinding->fChar = ssType == SQL_CHAR || ssType == SQL_VARCHAR || ssType == SQL_LONGVARCHAR;
-
-                    pThisBinding->sNext = NULL;
-
-                    // Arbitrary limit on display size
-                    if (cchDisplay > DISPLAY_MAX)
-                        cchDisplay = DISPLAY_MAX;
-
-                    // Allocate a buffer big enough to hold the text representation
-                    // of the data.  Add one character for the null terminator
-
-                    pThisBinding->wszBuffer = (WCHAR *)malloc((cchDisplay+1) * sizeof(WCHAR));
-
-                    if (!(pThisBinding->wszBuffer)) {
-                        set_user_error(L"Out of memory!");
-                        return false;
-                    }
-
-                    // Map this buffer to the driver's buffer.   At Fetch time,
-                    // the driver will fill in this data.  Note that the size is
-                    // count of bytes (for Unicode).  All ODBC functions that take
-                    // SQLPOINTER use count of bytes; all functions that take only
-                    // strings use count of characters.
-
+                    SQLLEN column_size;
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
-                            SQLBindCol(stmt_, c, SQL_C_TCHAR,
-                                (SQLPOINTER) pThisBinding->wszBuffer,
-                                sizeof(wchar_t) * (cchDisplay + 1), &pThisBinding->indPtr))) 
-                                return false;
+                            SQLColAttribute(stmt_, c, SQL_DESC_LENGTH,
+                                NULL, 0, NULL, &column_size))) return false;
 
-                    // Now set the display size that we will use to display
-                    // the data.   Figure out the length of the column name
-
+                    SQLSMALLINT column_name_length;
+                    WCHAR column_name[DISPLAY_COLUMN_MAX+1];
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
                             SQLColAttribute(stmt_, c, SQL_DESC_NAME,
-                                NULL, 0, &cchColumnNameLength, NULL))) return false;
+                                column_name, DISPLAY_COLUMN_MAX, &column_name_length, NULL))) return false;
+                }
 
-                    pThisBinding->cDisplaySize = std::max((SQLSMALLINT)cchDisplay, cchColumnNameLength);
-                    if (pThisBinding->cDisplaySize < NULL_SIZE)
-                        pThisBinding->cDisplaySize = NULL_SIZE;
+                
+                return true;
+                // SQLSMALLINT     c;
+                // BINDING         *pThisBinding, *pLastBinding = NULL;
+                // SQLLEN          column_size, col_type, allocate_column;
+                // SQLSMALLINT     column_name_length;
+
+                // for (c = 1; c <= col_count; ++c) {
+
+                //     // pThisBinding = (BINDING *)(malloc(sizeof(BINDING)));
+                //     // if (!(pThisBinding)) {
+                //     //     set_user_error(L"Out of memory!");
+                //     //     return false;
+                //     // }
+
+                //     // if (c == 1) *ppBinding = pThisBinding;
+                //     // else pLastBinding->sNext = pThisBinding;
+                //     // pLastBinding = pThisBinding;
+
+
+                //     // Figure out the display length of the column (we will
+                //     // bind to char since we are only displaying data, in general
+                //     // you should bind to the appropriate C type if you are going
+                //     // to manipulate data since it is much faster...)
+
+
+
+                //     // Figure out if this is a character or numeric column; this is
+                //     // used to determine if we want to display the data left- or right-
+                //     // aligned.
+
+                //     // SQL_DESC_CONCISE_TYPE maps to the 1.x SQL_COLUMN_TYPE.
+                //     // This is what you must use if you want to work
+                //     // against a 2.x driver.
+
+                //     // if(!handle_ret_code(stmt_,  SQL_HANDLE_STMT,
+                //     //         SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
+                //     //             NULL, 0, NULL, &col_type))) return false;
+
+                //     // pThisBinding->is_char = col_type == SQL_CHAR || col_type == SQL_VARCHAR || col_type == SQL_LONGVARCHAR;
+                //     // pThisBinding->sNext = NULL;
+
+                //     // Arbitrary limit on display size
+                //     //if (cchDisplay > DISPLAY_COLUMN_MAX)
+                //     // cchDisplay = pThisBinding->column_size > DISPLAY_COLUMN_MAX ? pThisBinding->column_size : DISPLAY_COLUMN_MAX;
+
+                //     // Allocate a buffer big enough to hold the text representation
+                //     // of the data.  Add one character for the null terminator
+
+                //     // pThisBinding->wszBuffer = (WCHAR *)malloc((cchDisplay+1) * sizeof(WCHAR));
+
+                //     // if (!(pThisBinding->wszBuffer)) {
+                //     //     set_user_error(L"Out of memory!");
+                //     //     return false;
+                //     // }
+
+                //     // Map this buffer to the driver's buffer.   At Fetch time,
+                //     // the driver will fill in this data.  Note that the size is
+                //     // count of bytes (for Unicode).  All ODBC functions that take
+                //     // SQLPOINTER use count of bytes; all functions that take only
+                //     // strings use count of characters.
+
+                //     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
+                //             SQLBindCol(stmt_, c, SQL_C_TCHAR,
+                //                 (SQLPOINTER) pThisBinding->wszBuffer,
+                //                 sizeof(wchar_t) * (cchDisplay + 1), &pThisBinding->indPtr))) 
+                //                 return false;
+
+                //     // Now set the display size that we will use to display
+                //     // the data.   Figure out the length of the column name
+
+                //     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
+                //             SQLColAttribute(stmt_, c, SQL_DESC_NAME,
+                //                 NULL, 0, &column_name_length, NULL))) return false;
+
+                //     pThisBinding->display_column_size = cchDisplay > column_name_length ? cchDisplay : column_name_length;
+                //     if (pThisBinding->display_column_size < NULL_COLUMN_SIZE)
+                //         pThisBinding->display_column_size = NULL_COLUMN_SIZE;
 
                 }
 
