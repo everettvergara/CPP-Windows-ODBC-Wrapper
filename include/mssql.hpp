@@ -21,13 +21,13 @@ namespace g80 {
         #define SQL_QUERY_SIZE 8192
 
         class odbc {
+        
         private:
+        
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
             SQLHSTMT    stmt_{NULL};
-            // WCHAR       last_message_[MESSAGE_SIZE]{'\0'};
-            // WCHAR       last_state_[SQL_SQLSTATE_SIZE+1];
-            // SQLINTEGER  last_error_{0};
+            odbc_error_mgr  err_;
 
             void check_for_message(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE rc) {
                 if(rc == SQL_INVALID_HANDLE) {
@@ -47,7 +47,12 @@ namespace g80 {
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {
-                // msg_.emplace_back(L"Custom Error here", L"", 50001);
+                if(auto err = err_.get_next_slot(); err) {
+                    wcscpy(err->last_message, error_msg);
+                    wcscpy(err->last_state, L"");
+                    err->last_error = -1;
+                    return true;
+                }
                 return false;
             }
 
@@ -103,7 +108,7 @@ namespace g80 {
 
         public:
 
-            odbc() {}
+            odbc(const size_t max_err = 5) : err_(max_err) {}
             odbc(const odbc &) = delete;
             odbc(odbc &&) = delete;
             auto operator=(const odbc &) -> odbc & = delete;
