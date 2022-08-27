@@ -123,7 +123,7 @@ namespace g80 {
                 for(const auto &e : err_) {
                     out += e.last_state;
                     out += L": ("; 
-                    out += e.last_error;
+                    out += std::to_wstring(e.last_error);
                     out += L") ";
                     out += e.last_message;
                     out += L"\n";

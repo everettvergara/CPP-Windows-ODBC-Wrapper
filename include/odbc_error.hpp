@@ -50,11 +50,11 @@ namespace g80 {
                 errors_(std::unique_ptr<odbc_error[]>(new odbc_error[max_errors_])) {}
             
             auto begin() const -> iterator {
-                return iterator(&errors_[0]);
+                return iterator(errors_.get());
             }
             
             auto end() const -> iterator {
-                return iterator(&errors_[ix_]);
+                return iterator(errors_.get() + ix_);
             }
 
             auto size() const -> int {
@@ -67,7 +67,8 @@ namespace g80 {
 
             auto get_next_slot() -> odbc_error * {
                 if(ix_ == max_errors_) return nullptr;
-                auto ptr = &errors_[++ix_];
+                auto ptr = errors_.get() + ix_;
+                ix_++;
                 return ptr;
             }
 
