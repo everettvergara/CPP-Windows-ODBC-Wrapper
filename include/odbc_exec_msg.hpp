@@ -9,34 +9,34 @@
 namespace g80 {
     namespace odbc {
 
-        #define ERROR_MESSAGE_SIZE 1024
+        #define EXEC_MESSAGE_SIZE 1024
 
-        struct odbc_error {
-            WCHAR       last_message[ERROR_MESSAGE_SIZE];
+        struct odbc_exec_msg {
+            WCHAR       last_message[EXEC_MESSAGE_SIZE];
             WCHAR       last_state[SQL_SQLSTATE_SIZE+1];
-            SQLINTEGER  last_error;
+            SQLINTEGER  last_exec_msg;
 
-            odbc_error() {};
-            odbc_error(const WCHAR *msg, const WCHAR *state, SQLINTEGER error) : last_error(error) {
+            odbc_exec_msg() {};
+            odbc_exec_msg(const WCHAR *msg, const WCHAR *state, SQLINTEGER exec_msg) : last_exec_msg(exec_msg) {
                 wcscpy(last_message, msg);
                 wcscpy(last_state, state);
             }
         };
 
-        class odbc_error_mgr {
+        class odbc_exec_msg_mgr {
             
             size_t ix_{0};
-            size_t max_errors_;
-            std::unique_ptr<odbc_error[]> errors_;
+            size_t max_exec_msgs_;
+            std::unique_ptr<odbc_exec_msg[]> exec_msgs_;
 
             struct iterator {
             private:
-                odbc_error *ptr;
+                odbc_exec_msg *ptr;
                 
             public:
-                iterator(odbc_error *p) : ptr(p) {}
-                auto operator*() -> odbc_error & {return *ptr;}
-                auto operator->() -> odbc_error * {return ptr;}
+                iterator(odbc_exec_msg *p) : ptr(p) {}
+                auto operator*() -> odbc_exec_msg & {return *ptr;}
+                auto operator->() -> odbc_exec_msg * {return ptr;}
                 auto operator++() -> iterator & {++ptr; return *this;}
                 auto operator++(int) -> iterator {iterator t = *this; ++ptr; return t;}
                 friend auto operator==(const iterator &l, const iterator &r) -> bool {return l.ptr == r.ptr;}
@@ -45,16 +45,16 @@ namespace g80 {
 
         public:
 
-            odbc_error_mgr(size_t max_errors = 5) : 
-                max_errors_(max_errors), 
-                errors_(std::unique_ptr<odbc_error[]>(new odbc_error[max_errors_])) {}
+            odbc_exec_msg_mgr(size_t max_exec_msgs = 5) : 
+                max_exec_msgs_(max_exec_msgs), 
+                exec_msgs_(std::unique_ptr<odbc_exec_msg[]>(new odbc_exec_msg[max_exec_msgs_])) {}
             
             auto begin() const -> iterator {
-                return iterator(errors_.get());
+                return iterator(exec_msgs_.get());
             }
             
             auto end() const -> iterator {
-                return iterator(errors_.get() + ix_);
+                return iterator(exec_msgs_.get() + ix_);
             }
 
             auto size() const -> int {
@@ -65,11 +65,9 @@ namespace g80 {
                 ix_ = 0;
             }
 
-            auto get_next_slot() -> odbc_error * {
-                if(ix_ == max_errors_) return nullptr;
-                auto ptr = errors_.get() + ix_;
-                ix_++;
-                return ptr;
+            auto get_next_slot() -> odbc_exec_msg * {
+                if(ix_ == max_exec_msgs_) return nullptr;
+                return exec_msgs_.get() + ix_++;
             }
 
             auto pop_last_slot() -> bool {

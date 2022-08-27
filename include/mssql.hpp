@@ -13,7 +13,7 @@
 #include <sqlext.h>
 #include <sqltypes.h>
 
-#include "odbc_error.hpp"
+#include "odbc_exec_msg.hpp"
 
 namespace g80 {
     namespace odbc {
@@ -27,29 +27,22 @@ namespace g80 {
             SQLHENV     env_{NULL};
             SQLHDBC     dbc_{NULL};
             SQLHSTMT    stmt_{NULL};
-            odbc_error_mgr  err_;
+            odbc_exec_msg_mgr  msg_;
 
             auto check_for_message(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> void {
                 if(rc == SQL_INVALID_HANDLE) {set_user_error(L"Invalid Handle"); return;}
-                
                 SQLSMALLINT i = 0;
-                odbc_error *m = nullptr; 
-                do {
-                    m = err_.get_next_slot();
-                    rc = SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_error, m->last_message, ERROR_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
-                    if(rc == SQL_SUCCESS) {
-                        std::wcout << "hello: " << m->last_message << "\n";
-                    }
-                } while(rc == SQL_SUCCESS);
-                err_.pop_last_slot();
-                // std::wcout << "hello: " << err_.size() << "\n";
+                odbc_exec_msg *m = nullptr; 
+                do m = msg_.get_next_slot();
+                while(SQLGetDiagRec(type, handle, ++i, m->last_state, &m->last_exec_msg, m->last_message, EXEC_MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+                msg_.pop_last_slot();
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {
-                if(auto err = err_.get_next_slot(); err) {
+                if(auto err = msg_.get_next_slot(); err) {
                     wcscpy(err->last_message, error_msg);
                     wcscpy(err->last_state, L"");
-                    err->last_error = -1;
+                    err->last_exec_msg = -1;
                     return true;
                 }
                 return false;
@@ -107,23 +100,23 @@ namespace g80 {
 
         public:
 
-            odbc(const size_t max_err = 5) : err_(max_err) {}
+            odbc(const size_t max_err = 5) : msg_(max_err) {}
             odbc(const odbc &) = delete;
             odbc(odbc &&) = delete;
             auto operator=(const odbc &) -> odbc & = delete;
             auto operator=(odbc &&) -> odbc & = delete;
             ~odbc() {disconnect();}
 
-            inline auto get_err() const -> const odbc_error_mgr & {
-                return err_;
+            inline auto get_last_msg() const -> const odbc_exec_msg_mgr & {
+                return msg_;
             }
 
-            inline auto get_formatted_last_error() const -> std::wstring {
+            inline auto get_formatted_last_msg() const -> std::wstring {
                 std::wstring out;
-                for(const auto &e : err_) {
+                for(const auto &e : msg_) {
                     out += e.last_state;
                     out += L": ("; 
-                    out += std::to_wstring(e.last_error);
+                    out += std::to_wstring(e.last_exec_msg);
                     out += L") ";
                     out += e.last_message;
                     out += L"\n";
@@ -132,6 +125,7 @@ namespace g80 {
             }
 
             auto connect_by_dsn(const std::wstring &server, const std::wstring &user, const std::wstring &passwd) -> bool {
+                msg_.reset();
                 if(!init()) return false;
                 if(!handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLConnect(dbc_, 
                     const_cast<wchar_t *>(server.c_str()), server.size(), 
@@ -141,6 +135,7 @@ namespace g80 {
             }
 
             auto connect_by_file_dsn(const std::wstring &dsn, const std::wstring &user, const std::wstring &passwd) -> bool {
+                msg_.reset();
                 if(!init()) return false;
                 std::wstring conn_str = L"FILEDSN=" + dsn  + L"; UID=" + user + L"; PWD=" + passwd; 
                 if(!handle_ret_code(dbc_, SQL_HANDLE_DBC, SQLDriverConnect(dbc_, NULL, 
@@ -150,6 +145,7 @@ namespace g80 {
             }
 
             auto disconnect() -> bool {
+                msg_.reset();
                 if(!dealloc_statement()) return false;
                 if(!dealloc_connection()) return false;
                 if(!dealloc_env()) return false;
@@ -157,6 +153,7 @@ namespace g80 {
             }
 
             auto exec(wchar_t *command) -> RETCODE {
+                msg_.reset();
                 return SQLExecDirect(stmt_, command, SQL_NTS);
             }
 
