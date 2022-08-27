@@ -43,23 +43,19 @@ namespace g80 {
                     return;
                 } 
                 SQLSMALLINT i = 0;
-                // while(SQLGetDiagRec(hType, hHandle, ++i, 
-                //         last_state_, &last_error_, last_message_, 
-                //         MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL)) == SQL_SUCCESS);
+                do {
+                    auto &m = msg_.emplace_back();
+
+                    RETCODE rc = SQLGetDiagRec(hType, hHandle, ++i, m.last_state, &m.last_error, m.last_message, 
+                                    MESSAGE_SIZE, static_cast<SQLSMALLINT *>(NULL));
+                    
+                    if(rc != SQL_SUCCESS) {msg_.pop_back(); break;}                
+
+               } while(true);
             }
 
             auto set_user_error(const WCHAR *error_msg) -> bool {
-
-                // odbc_error_message m;
-                // wcscpy(m.last_message, error_msg);
-                // wcscpy(m.last_state, L"?????");
-                // m.last_error = 50001;
-
                 msg_.emplace_back(L"Custom Error here", L"", 50001);
-                // wcscpy(last_message_, error_msg.c_str()); 
-                // std::fill_n(last_state_, SQL_SQLSTATE_SIZE, TCHAR('?')); 
-                // last_state_[SQL_SQLSTATE_SIZE] = TCHAR('\0');
-                // last_error_ = 50001;
                 return false;
             }
 
