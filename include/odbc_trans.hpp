@@ -155,75 +155,47 @@ namespace g80 {
                 return true;
             }
 
-            auto exec(WCHAR *command) -> bool {
+            auto process_exec(const RETCODE rc) -> bool {
+                if(static_cast<unsigned short>(rc) > SQL_SUCCESS_WITH_INFO) 
+                    return handle_ret_code(stmt_, SQL_HANDLE_STMT, rc);
 
-                auto free_stmt = [&](bool ret) -> bool {
-                    handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE));
-                    return ret;
-                };
+                if(rc == SQL_SUCCESS_WITH_INFO) 
+                    check_for_message(stmt_, SQL_HANDLE_STMT, rc);
 
-                msg_.reset();
+                SQLSMALLINT col_count;
+                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
+                    SQLNumResultCols(stmt_, &col_count))) return false;
+                
+                if(col_count > 0) {
+                    std::vector<col_binding> columns;                       
+                    if(!bind_columns(col_count, columns)) return false;
 
-                RETCODE rc = SQLExecDirect(stmt_, command, SQL_NTS);
+                    RETCODE frc;
+                    do {
+                        frc = SQLFetch(stmt_);
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, frc)) return false;
 
-                switch(rc) {
-
-                    case SQL_SUCCESS_WITH_INFO:
-                        
-                        check_for_message(stmt_, SQL_HANDLE_STMT, rc);
-
-                    case SQL_SUCCESS:
-                        
-                        SQLSMALLINT col_count;
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) 
-                            return free_stmt(false);
-
-                        if(col_count > 0) {
-                            std::vector<col_binding> columns;                       
-                            if(!bind_columns(col_count, columns)) 
-                                return free_stmt(false);
-
-                            do {
-                                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) 
-                                    return free_stmt(false);
-
-                                if(rc != SQL_NO_DATA_FOUND) {
-
-                                    // Add to data object here
-
-
-                                    // for(auto &c : columns) {
-                                    //     std::wcout << c.column_name << " (" << c.column_size << "): " << c.buffer << std::endl;
-                                    //     // if(c.indicator != SQL_NULL_DATA)
-                                    //     //     std::wcout << c.column_name << ": " << c.buffer << "\n";
-                                    //     // else 
-                                    //     //     std::wcout << c.column_name << ": <NULL>\n";
-                                    // }
-                                }
-                            } while(rc != SQL_NO_DATA_FOUND);
-                        } 
-
-                        auto m = msg_.get_next_slot();
-                        wcscpy(m->last_message, L"Executed Successfully!");
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLRowCount(stmt_, &m->last_row_count))) 
-                            return free_stmt(false);
-
-                        break;
-
-                    case SQL_ERROR:
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc)) 
-                            return free_stmt(false);
-
-                    default:
-                        set_user_error(L"Unexpected error!");
-                        return free_stmt(false);
-
+                        if(frc != SQL_NO_DATA_FOUND) {
+                            // for(auto &c : columns) {
+                            //     std::wcout << c.column_name << " (" << c.column_size << "): " << c.buffer << std::endl;
+                            //     // if(c.indicator != SQL_NULL_DATA)
+                        }
+                    } while(rc != SQL_NO_DATA_FOUND);
                 }
 
-                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE))) 
-                    return false;
-
+                auto m = msg_.get_next_slot();
+                wcscpy(m->last_message, L"Executed Successfully!");
+                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
+                    SQLRowCount(stmt_, &m->last_row_count))) return false;
+                
                 return true;
+            }
+
+            auto exec(WCHAR *command) -> bool {
+                msg_.reset();
+                auto bool_exit = process_exec(SQLExecDirect(stmt_, command, SQL_NTS));
+                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE))) return false;
+                return bool_exit;
             }
 
             auto bind_columns(SQLSMALLINT col_count, std::vector<col_binding> &columns) -> bool {
@@ -246,7 +218,8 @@ namespace g80 {
                                 columns[c].column_name, DISPLAY_COLUMN_MAX, 
                                 &columns[c].column_display_size, NULL))) return false;
                     
-                    columns[c].column_display_size = columns[c].column_display_size > DISPLAY_COLUMN_MAX ? DISPLAY_COLUMN_MAX : columns[c].column_display_size;
+                    columns[c].column_display_size = columns[c].column_display_size > DISPLAY_COLUMN_MAX ? 
+                                                        DISPLAY_COLUMN_MAX : columns[c].column_display_size;
                     columns[c].buffer = std::make_unique<WCHAR[]>(columns[c].column_size + 1);
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
                         SQLBindCol(stmt_, sql_col, SQL_C_TCHAR, 
