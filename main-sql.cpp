@@ -1,11 +1,17 @@
 #define UNICODE
 #include <iostream>
 #include "odbc_trans.hpp"
+#include <types/decimal.hpp>
 
 using namespace g80::odbc;
 // auto main(int argc, const char *argv[]) -> int {
 auto main() -> int {
 
+
+    decimal currency(2);
+
+
+    return true;
     odbc_trans mssql;
 
     if(!mssql.connect_by_dsn(L"test", L"sa", L"Kerberos2014!")) 
