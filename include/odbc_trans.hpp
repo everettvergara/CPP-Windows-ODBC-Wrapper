@@ -184,7 +184,7 @@ namespace g80 {
                 auto m = msg_.get_next_slot();
                 m->last_exec_msg = 0;
                 wcscpy(m->last_state, L"");
-                wcscpy(m->last_message, L"Executed Successfully!");
+                wcscpy(m->last_message, L"Command executed successfully.");
                 if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
                     SQLRowCount(stmt_, &m->last_row_count))) return false;
                 
