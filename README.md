@@ -1,2 +1,1 @@
-# MSSQL-Connector
-Connect to MSSQL using C++
+A Windows ODBC wrapper class for C++. Execute TSQL and more.
