@@ -46,6 +46,7 @@ namespace g80 {
 
         public:
 
+            //TODO: validate max_exec_msgs; should be >= 1
             odbc_exec_msg_mgr(size_t max_exec_msgs = 5) : 
                 max_exec_msgs_(max_exec_msgs), 
                 exec_msgs_(std::unique_ptr<odbc_exec_msg[]>(new odbc_exec_msg[max_exec_msgs_])) {}
@@ -67,7 +68,7 @@ namespace g80 {
             }
 
             auto get_next_slot() -> odbc_exec_msg * {
-                if(ix_ == max_exec_msgs_) return nullptr;
+                if(ix_ == max_exec_msgs_) --ix_;
                 return exec_msgs_.get() + ix_++;
             }
 

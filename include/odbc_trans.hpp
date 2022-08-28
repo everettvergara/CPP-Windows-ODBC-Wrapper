@@ -41,14 +41,11 @@ namespace g80 {
                 msg_.pop_last_slot();
             }
 
-            auto set_user_error(const WCHAR *error_msg) -> bool {
-                if(auto err = msg_.get_next_slot(); err) {
-                    wcscpy(err->last_message, error_msg);
-                    wcscpy(err->last_state, L"");
-                    err->last_exec_msg = -1;
-                    return true;
-                }
-                return false;
+            auto set_user_error(const WCHAR *error_msg) -> void {
+                auto err = msg_.get_next_slot(); 
+                wcscpy(err->last_message, error_msg);
+                wcscpy(err->last_state, L"");
+                err->last_exec_msg = -1;
             }
 
             auto handle_ret_code(SQLHANDLE handle, SQLSMALLINT type, RETCODE rc) -> bool {
@@ -59,7 +56,7 @@ namespace g80 {
 
            auto alloc_env() -> bool {
                 if(env_ != NULL) return true;
-                if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) return set_user_error(L"Could not allocate environment handle");
+                if(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_) == SQL_ERROR) {set_user_error(L"Could not allocate environment handle"); return false;}
                 return handle_ret_code(env_, SQL_HANDLE_ENV, SQLSetEnvAttr(env_, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)); 
             }
 
@@ -70,15 +67,15 @@ namespace g80 {
 
             auto dealloc_connection() -> bool {
                 if(dbc_ == NULL) return true;
-                if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not disconnect db handle");
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not deallocate db handle");
+                if(SQLRETURN rc = SQLDisconnect(dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {set_user_error(L"Could not disconnect db handle"); return false;}
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_DBC, dbc_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {set_user_error(L"Could not deallocate db handle"); return false;}
                 dbc_ = NULL;
                 return true;
             }
 
             auto dealloc_env() -> bool {
                 if(env_ == NULL) return true;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not free up env handle");
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_ENV, env_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {set_user_error(L"Could not free up env handle"); return false;}
                 env_ = NULL;
                 return true;
             }
@@ -90,7 +87,7 @@ namespace g80 {
 
             auto dealloc_statement() -> bool {
                 if(stmt_ == NULL) return true;
-                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_STMT, stmt_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) return set_user_error(L"Could not free up stmt handle");
+                if(SQLRETURN rc = SQLFreeHandle(SQL_HANDLE_STMT, stmt_); rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {set_user_error(L"Could not free up stmt handle"); return false;}
                 stmt_ = NULL;
                 return true;
             }
@@ -122,6 +119,8 @@ namespace g80 {
                     out += std::to_wstring(e.last_exec_msg);
                     out += L") ";
                     out += e.last_message;
+                    if(e.last_row_count > 0)
+                        out += L" - (" + std::to_wstring(e.last_row_count) + L" rows)";
                     out += L"\n";
                 }
                 return out;
@@ -176,11 +175,15 @@ namespace g80 {
                         if(frc == SQL_NO_DATA_FOUND) break;
                         if(static_cast<unsigned short>(frc) > SQL_SUCCESS_WITH_INFO) return false;
 
-                        // Populate data object here....
+                        for(auto &c : columns)
+                            std::wcout << "col " << c.column_name << "(" << c.column_size << "): " << c.buffer << "\n";
+                        
                     } while(true);
                 }
 
                 auto m = msg_.get_next_slot();
+                m->last_exec_msg = 0;
+                wcscpy(m->last_state, L"");
                 wcscpy(m->last_message, L"Executed Successfully!");
                 if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
                     SQLRowCount(stmt_, &m->last_row_count))) return false;
