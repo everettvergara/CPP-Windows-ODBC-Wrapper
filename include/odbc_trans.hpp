@@ -155,11 +155,6 @@ namespace g80 {
                 return true;
             }
 
-            // auto exec_free_stmt() -> bool {
-            //     handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE));
-            //     return false;
-            // }
-
             auto exec(WCHAR *command) -> bool {
 
                 auto free_stmt = [&](bool ret) -> bool {
@@ -208,8 +203,9 @@ namespace g80 {
                             } while(rc != SQL_NO_DATA_FOUND);
                         } 
 
-                        SQLLEN row_count;
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLRowCount(stmt_, &row_count))) 
+                        auto m = msg_.get_next_slot();
+                        wcscpy(m->last_message, L"Executed Successfully!");
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLRowCount(stmt_, &m->last_row_count))) 
                             return free_stmt(false);
 
                         break;
