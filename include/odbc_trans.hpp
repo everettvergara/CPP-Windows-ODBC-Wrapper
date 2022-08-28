@@ -172,20 +172,29 @@ namespace g80 {
                             do {
                                 if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
                                 if(rc != SQL_NO_DATA_FOUND) {
-                                    for(auto &c : columns) {
-                                        std::wcout << c.column_name << " (" << c.column_size << "): " << c.buffer << std::endl;
-                                        // if(c.indicator != SQL_NULL_DATA)
-                                        //     std::wcout << c.column_name << ": " << c.buffer << "\n";
-                                        // else 
-                                        //     std::wcout << c.column_name << ": <NULL>\n";
-                                    }
+
+                                    // Add to data object here
+
+
+                                    // for(auto &c : columns) {
+                                    //     std::wcout << c.column_name << " (" << c.column_size << "): " << c.buffer << std::endl;
+                                    //     // if(c.indicator != SQL_NULL_DATA)
+                                    //     //     std::wcout << c.column_name << ": " << c.buffer << "\n";
+                                    //     // else 
+                                    //     //     std::wcout << c.column_name << ": <NULL>\n";
+                                    // }
                                 }
                             } while(rc != SQL_NO_DATA_FOUND);
-                        }
+                        } 
+                        SQLLEN row_count;
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLRowCount(stmt_, &row_count))) return false;
+
+                        break;
+                    case SQL_ERROR:
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
+                    default:
+                        return set_user_error(L"Unexpected error!");
                 }
-
-
-
 
                 return true;
             }
