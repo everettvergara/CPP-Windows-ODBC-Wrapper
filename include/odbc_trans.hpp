@@ -155,22 +155,43 @@ namespace g80 {
                 return true;
             }
 
-            auto exec(wchar_t *command) -> bool {
+            // auto exec_free_stmt() -> bool {
+            //     handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE));
+            //     return false;
+            // }
+
+            auto exec(WCHAR *command) -> bool {
+
+                auto free_stmt = [&](bool ret) -> bool {
+                    handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE));
+                    return ret;
+                };
+
                 msg_.reset();
 
                 RETCODE rc = SQLExecDirect(stmt_, command, SQL_NTS);
-                SQLSMALLINT col_count;
+
                 switch(rc) {
+
                     case SQL_SUCCESS_WITH_INFO:
+                        
                         check_for_message(stmt_, SQL_HANDLE_STMT, rc);
 
                     case SQL_SUCCESS:
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
+                        
+                        SQLSMALLINT col_count;
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) 
+                            return free_stmt(false);
+
                         if(col_count > 0) {
                             std::vector<col_binding> columns;                       
-                            if(!bind_columns(col_count, columns)) return false;
+                            if(!bind_columns(col_count, columns)) 
+                                return free_stmt(false);
+
                             do {
-                                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
+                                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) 
+                                    return free_stmt(false);
+
                                 if(rc != SQL_NO_DATA_FOUND) {
 
                                     // Add to data object here
@@ -186,15 +207,25 @@ namespace g80 {
                                 }
                             } while(rc != SQL_NO_DATA_FOUND);
                         } 
+
                         SQLLEN row_count;
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLRowCount(stmt_, &row_count))) return false;
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLRowCount(stmt_, &row_count))) 
+                            return free_stmt(false);
 
                         break;
+
                     case SQL_ERROR:
-                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
+                        if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc)) 
+                            return free_stmt(false);
+
                     default:
-                        return set_user_error(L"Unexpected error!");
+                        set_user_error(L"Unexpected error!");
+                        return free_stmt(false);
+
                 }
+
+                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLFreeStmt(stmt_, SQL_CLOSE))) 
+                    return false;
 
                 return true;
             }
