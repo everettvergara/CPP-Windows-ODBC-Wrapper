@@ -10,7 +10,7 @@ namespace g80 {
             SQLLEN                      column_type, indicator;
             WCHAR                       column_name[DISPLAY_COLUMN_MAX+1];
             // WCHAR                       buffer[256 * sizeof(WCHAR)];
-            std::unique_ptr<WCHAR[]>    buffer{std::unique_ptr<WCHAR[]>(new WCHAR[10])};
+            std::unique_ptr<WCHAR[]>    buffer{nullptr};
         };
     }
 }

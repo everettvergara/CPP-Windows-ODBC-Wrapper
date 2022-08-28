@@ -201,7 +201,7 @@ namespace g80 {
             auto bind_columns(SQLSMALLINT col_count, std::vector<col_binding> &columns) -> bool {
                 
                 columns.clear();
-                columns.reserve(col_count);
+                columns.resize(col_count);
 
                 for(SQLSMALLINT sql_col{1}, c{0}; c < col_count; c = sql_col++) {
 
@@ -218,7 +218,7 @@ namespace g80 {
                                 columns[c].column_name, DISPLAY_COLUMN_MAX, 
                                 &columns[c].column_display_size, NULL))) return false;
 
-                    columns[c].buffer = std::unique_ptr<WCHAR[]>(new WCHAR[columns[c].column_size + 1]);
+                    columns[c].buffer = std::make_unique<WCHAR[]>(columns[c].column_size + 1);
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
                         SQLBindCol(stmt_, sql_col, SQL_C_TCHAR, 
                             static_cast<SQLPOINTER>(columns[c].buffer.get()),
