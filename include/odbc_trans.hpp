@@ -170,17 +170,14 @@ namespace g80 {
                     std::vector<col_binding> columns;                       
                     if(!bind_columns(col_count, columns)) return false;
 
-                    RETCODE frc;
                     do {
-                        frc = SQLFetch(stmt_);
+                        RETCODE frc = SQLFetch(stmt_);
                         if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, frc)) return false;
+                        if(frc == SQL_NO_DATA_FOUND) break;
+                        if(static_cast<unsigned short>(frc) > SQL_SUCCESS_WITH_INFO) return false;
 
-                        if(frc != SQL_NO_DATA_FOUND) {
-                            // for(auto &c : columns) {
-                            //     std::wcout << c.column_name << " (" << c.column_size << "): " << c.buffer << std::endl;
-                            //     // if(c.indicator != SQL_NULL_DATA)
-                        }
-                    } while(rc != SQL_NO_DATA_FOUND);
+                        // Populate data object here....
+                    } while(true);
                 }
 
                 auto m = msg_.get_next_slot();

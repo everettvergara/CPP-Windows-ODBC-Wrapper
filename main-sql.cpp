@@ -3,7 +3,8 @@
 #include "odbc_trans.hpp"
 
 using namespace g80::odbc;
-auto main(int argc, const char *argv[]) -> int {
+// auto main(int argc, const char *argv[]) -> int {
+auto main() -> int {
 
     odbc_trans mssql;
 
