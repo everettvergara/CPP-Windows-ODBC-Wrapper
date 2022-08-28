@@ -167,28 +167,20 @@ namespace g80 {
                     case SQL_SUCCESS:
                         if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
                         if(col_count > 0) {
-                            std::vector<col_binding> columns;
-
-                            std::wcout << "xxxx!" << std::endl;                            
+                            std::vector<col_binding> columns;                       
                             if(!bind_columns(col_count, columns)) return false;
-                            
-                            std::wcout << "hello!" << std::endl;
-                            
-                            for(auto &c : columns)
-                                std::wcout << c.column_name << std::endl;
-
-                            // if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
-                            // if(rc == SQL_NO_DATA_FOUND) {
-                            //     std::wcout << "No records retrieved.\n";
-                            // } else {
-                            //     for(auto &c : columns) {
-                            //         std::wcout << c.column_name << std::endl;
-                            //         // if(c.indicator != SQL_NULL_DATA)
-                            //         //     std::wcout << c.column_name << ": " << c.buffer << "\n";
-                            //         // else 
-                            //         //     std::wcout << c.column_name << ": <NULL>\n";
-                            //     }
-                            // }
+                            if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
+                            if(rc == SQL_NO_DATA_FOUND) {
+                                std::wcout << "No records retrieved.\n";
+                            } else {
+                                for(auto &c : columns) {
+                                    std::wcout << c.column_name << ": " << c.buffer << std::endl;
+                                    // if(c.indicator != SQL_NULL_DATA)
+                                    //     std::wcout << c.column_name << ": " << c.buffer << "\n";
+                                    // else 
+                                    //     std::wcout << c.column_name << ": <NULL>\n";
+                                }
+                            }
                         }
                 }
 
@@ -203,7 +195,7 @@ namespace g80 {
                 columns.clear();
                 columns.resize(col_count);
 
-                for(SQLSMALLINT sql_col{1}, c{0}; c < col_count; c = sql_col++) {
+                for(SQLSMALLINT c{0}, sql_col{1}; c < col_count; c = sql_col++) {
 
                     if(!handle_ret_code(stmt_,  SQL_HANDLE_STMT,
                         SQLColAttribute(stmt_, sql_col, SQL_DESC_CONCISE_TYPE,
@@ -226,7 +218,6 @@ namespace g80 {
 
                 }
 
-                
                 return true;
             }
         };
