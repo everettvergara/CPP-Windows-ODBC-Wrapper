@@ -22,4 +22,5 @@ auto main(int argc, const char *argv[]) -> int {
     //if(!mssql.connect_by_file_dsn(L"D:\\Everett\\Codes\\Projects\\Personal\\Tools\\MSSQL-Connector\\db\\local.dsn", L"sa", L"Kerberos2014!")) {std::cout << "error5";}
     std::cout << "here!";
         
-}
+
+} 

@@ -7,9 +7,10 @@ namespace g80 {
         struct col_binding {    
             SQLLEN                      column_size;
             SQLSMALLINT                 column_display_size;
-            SQLLEN                      column_type;
+            SQLLEN                      column_type, indicator;
             WCHAR                       column_name[DISPLAY_COLUMN_MAX+1];
-            std::unique_ptr<WCHAR[]>    buffer{nullptr};
+            // WCHAR                       buffer[256 * sizeof(WCHAR)];
+            std::unique_ptr<WCHAR[]>    buffer{std::unique_ptr<WCHAR[]>(new WCHAR[10])};
         };
     }
 }

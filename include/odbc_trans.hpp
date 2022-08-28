@@ -168,18 +168,27 @@ namespace g80 {
                         if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, SQLNumResultCols(stmt_, &col_count))) return false;
                         if(col_count > 0) {
                             std::vector<col_binding> columns;
+
+                            std::wcout << "xxxx!" << std::endl;                            
                             if(!bind_columns(col_count, columns)) return false;
                             
-                            RETCODE rc;
-                            if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
-                            if(rc == SQL_NO_DATA_FOUND) {
-                                std::wcout << "No records retrieved.\n";
-                            } else {
-                                std::wcout << "hello!\n";
-                                for(auto &c : columns) {
-                                    std::wcout << c.column_name << ": " << c.buffer << "\n";
-                                }
-                            }
+                            std::wcout << "hello!" << std::endl;
+                            
+                            for(auto &c : columns)
+                                std::wcout << c.column_name << std::endl;
+
+                            // if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
+                            // if(rc == SQL_NO_DATA_FOUND) {
+                            //     std::wcout << "No records retrieved.\n";
+                            // } else {
+                            //     for(auto &c : columns) {
+                            //         std::wcout << c.column_name << std::endl;
+                            //         // if(c.indicator != SQL_NULL_DATA)
+                            //         //     std::wcout << c.column_name << ": " << c.buffer << "\n";
+                            //         // else 
+                            //         //     std::wcout << c.column_name << ": <NULL>\n";
+                            //     }
+                            // }
                         }
                 }
 
@@ -192,28 +201,28 @@ namespace g80 {
             auto bind_columns(SQLSMALLINT col_count, std::vector<col_binding> &columns) -> bool {
                 
                 columns.clear();
-                columns.resize(col_count);
+                columns.reserve(col_count);
 
-                for(SQLSMALLINT c{1}; c <= col_count; ++c) {
+                for(SQLSMALLINT sql_col{1}, c{0}; c < col_count; c = sql_col++) {
 
                     if(!handle_ret_code(stmt_,  SQL_HANDLE_STMT,
-                        SQLColAttribute(stmt_, c, SQL_DESC_CONCISE_TYPE,
+                        SQLColAttribute(stmt_, sql_col, SQL_DESC_CONCISE_TYPE,
                             NULL, 0, NULL, &columns[c].column_type))) return false;
 
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
-                            SQLColAttribute(stmt_, c, SQL_DESC_LENGTH,
+                            SQLColAttribute(stmt_, sql_col, SQL_DESC_LENGTH,
                                 NULL, 0, NULL, &columns[c].column_size))) return false;
 
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT,
-                            SQLColAttribute(stmt_, c, SQL_DESC_NAME,
+                            SQLColAttribute(stmt_, sql_col, SQL_DESC_NAME,
                                 columns[c].column_name, DISPLAY_COLUMN_MAX, 
                                 &columns[c].column_display_size, NULL))) return false;
 
-                    columns[c].buffer = std::make_unique<WCHAR[]>(columns[c].column_size);
+                    columns[c].buffer = std::unique_ptr<WCHAR[]>(new WCHAR[columns[c].column_size + 1]);
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
-                        SQLBindCol(stmt_, c, SQL_C_TCHAR, 
+                        SQLBindCol(stmt_, sql_col, SQL_C_TCHAR, 
                             static_cast<SQLPOINTER>(columns[c].buffer.get()),
-                            (columns[c].column_size + 1) * sizeof(WCHAR), NULL))) return false;
+                            (columns[c].column_size + 1) * sizeof(WCHAR), &columns[c].indicator))) return false;
 
                 }
 
