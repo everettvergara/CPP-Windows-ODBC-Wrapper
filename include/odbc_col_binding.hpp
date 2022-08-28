@@ -9,7 +9,6 @@ namespace g80 {
             SQLSMALLINT                 column_display_size;
             SQLLEN                      column_type, indicator;
             WCHAR                       column_name[DISPLAY_COLUMN_MAX+1];
-            // WCHAR                       buffer[256 * sizeof(WCHAR)];
             std::unique_ptr<WCHAR[]>    buffer{nullptr};
         };
     }

@@ -169,18 +169,18 @@ namespace g80 {
                         if(col_count > 0) {
                             std::vector<col_binding> columns;                       
                             if(!bind_columns(col_count, columns)) return false;
-                            if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
-                            if(rc == SQL_NO_DATA_FOUND) {
-                                std::wcout << "No records retrieved.\n";
-                            } else {
-                                for(auto &c : columns) {
-                                    std::wcout << c.column_name << ": " << c.buffer << std::endl;
-                                    // if(c.indicator != SQL_NULL_DATA)
-                                    //     std::wcout << c.column_name << ": " << c.buffer << "\n";
-                                    // else 
-                                    //     std::wcout << c.column_name << ": <NULL>\n";
+                            do {
+                                if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, rc = SQLFetch(stmt_))) return false;
+                                if(rc != SQL_NO_DATA_FOUND) {
+                                    for(auto &c : columns) {
+                                        std::wcout << c.column_name << " (" << c.column_size << "): " << c.buffer << std::endl;
+                                        // if(c.indicator != SQL_NULL_DATA)
+                                        //     std::wcout << c.column_name << ": " << c.buffer << "\n";
+                                        // else 
+                                        //     std::wcout << c.column_name << ": <NULL>\n";
+                                    }
                                 }
-                            }
+                            } while(rc != SQL_NO_DATA_FOUND);
                         }
                 }
 
@@ -209,13 +209,13 @@ namespace g80 {
                             SQLColAttribute(stmt_, sql_col, SQL_DESC_NAME,
                                 columns[c].column_name, DISPLAY_COLUMN_MAX, 
                                 &columns[c].column_display_size, NULL))) return false;
-
+                    
+                    columns[c].column_display_size = columns[c].column_display_size > DISPLAY_COLUMN_MAX ? DISPLAY_COLUMN_MAX : columns[c].column_display_size;
                     columns[c].buffer = std::make_unique<WCHAR[]>(columns[c].column_size + 1);
                     if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
                         SQLBindCol(stmt_, sql_col, SQL_C_TCHAR, 
                             static_cast<SQLPOINTER>(columns[c].buffer.get()),
                             (columns[c].column_size + 1) * sizeof(WCHAR), &columns[c].indicator))) return false;
-
                 }
 
                 return true;
