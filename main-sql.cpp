@@ -12,8 +12,8 @@ auto main() -> int {
         std::wcout << mssql.get_formatted_last_msg();
     // std::wcout << mssql.get_formatted_last_msg();
 
-    // wchar_t command[1024] {L"select * from users"};
-    wchar_t command[1024] {L"update a set a.name += 'x' from users as a where a.code = 'egv'"};
+    wchar_t command[1024] {L"select * from users"};
+    // wchar_t command[1024] {L"update a set a.name += 'x' from users as a where a.code = 'egv'"};
     mssql.exec(command);
     std::wcout << mssql.get_formatted_last_msg();
 

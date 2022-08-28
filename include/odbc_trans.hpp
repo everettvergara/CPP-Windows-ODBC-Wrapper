@@ -165,6 +165,7 @@ namespace g80 {
                 if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
                     SQLNumResultCols(stmt_, &col_count))) return false;
                 
+
                 if(col_count > 0) {
                     std::vector<col_binding> columns;                       
                     if(!bind_columns(col_count, columns)) return false;
@@ -186,7 +187,7 @@ namespace g80 {
                 wcscpy(m->last_state, L"");
                 wcscpy(m->last_message, L"Command executed successfully.");
                 if(!handle_ret_code(stmt_, SQL_HANDLE_STMT, 
-                    SQLRowCount(stmt_, &m->last_row_count))) return false;
+                    SQLRowCount(stmt_, &m->last_row_count))) return false;                
                 
                 return true;
             }
