@@ -10,12 +10,14 @@ auto main() -> int {
 
     decimal currency(2);
 
+    currency = 123.45;
+    std::cout << currency.get() << "\n";
 
     return true;
     odbc_trans mssql;
 
     if(!mssql.connect_by_dsn(L"test", L"sa", L"Kerberos2014!")) 
-    
+
         std::wcout << mssql.get_formatted_last_msg();
     // std::wcout << mssql.get_formatted_last_msg();
 
