@@ -15,6 +15,7 @@ auto main() -> int {
     odbc_trans mssql;
 
     if(!mssql.connect_by_dsn(L"test", L"sa", L"Kerberos2014!")) 
+    
         std::wcout << mssql.get_formatted_last_msg();
     // std::wcout << mssql.get_formatted_last_msg();
 
