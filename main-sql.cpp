@@ -11,7 +11,7 @@ auto main() -> int {
     decimal currency(2);
 
     currency = 123.45;
-    std::cout << currency.get() << "\n";
+    std::cout << currency.get_as_ldouble() << "\n";
 
     return true;
     odbc_trans mssql;

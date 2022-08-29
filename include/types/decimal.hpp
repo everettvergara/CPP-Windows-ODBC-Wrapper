@@ -7,6 +7,25 @@
 namespace g80 {
     namespace odbc {
 
+
+        /**
+         * 
+         *      a: 250
+         *      b: 15 
+         * 
+         *      +
+         * 
+         *      max_allowance: 255 - a: 0
+         * 
+         *      if b <= max_allowance, co = 0
+         *      else co = max - b
+         * 
+         *      
+         * 
+         */
+
+
+
         class decimal {
 
         private:
@@ -48,8 +67,8 @@ namespace g80 {
             }
 
             auto operator+=(decimal r) -> decimal & {
-                auto gs = std::max(scale_, r.scale_);
-                data_ = this->data_on_scale(gs) + r.data_on_scale(gs);
+                auto gs = std::max(scale_, r.scale_); 
+                data_ = this->data_on_scale(gs) + r.data_on_scale(gs); 
                 return *this;
             }
         };
