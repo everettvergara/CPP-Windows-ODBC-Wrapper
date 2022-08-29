@@ -49,14 +49,24 @@ namespace g80 {
 
         public:
 
-            decimal(int8_t scale = 2) : scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
-            decimal(const decimal &r) : data_{r.data_}, scale_{r.scale_}, scale_mul_{r.scale_mul_} {}
+            template<typename I> requires std::is_integral<I>::value
+            decimal(const I data, const int8_t scale = 2) : data_{data}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
+
+            template<typename F> requires std::is_floating_point<F>::value
+            decimal(const F data, const int8_t scale = 2) : data_{data}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
+
+            decimal(const decimal &r) : data_ {r.data_}, scale_{r.scale_}, scale_mul_{r.scale_mul_} {}
+
             decimal(decimal &&r) : data_{r.data_}, scale_{r.scale_}, scale_mul_{r.scale_mul_} {}
+
             ~decimal() = default;
+            
             auto operator=(const decimal &r) -> decimal & {data_ = {r.data_}, scale_ = {r.scale_}, scale_mul_ = {r.scale_mul_}; return *this;}
             auto operator=(decimal &&r) -> decimal & {data_ = {r.data_}, scale_ = {r.scale_}, scale_mul_ = {r.scale_mul_}; return *this;}
             template<typename T> requires std::is_integral<T>::value auto operator=(const T r) -> decimal & {data_ = r; return *this;}
+            
             template<typename T> requires std::is_floating_point<T>::value auto operator=(const T r) -> decimal & {
+                std::cout << "here\n";
                 data_ = static_cast<int64_t>(r * scale_mul_);
                 return *this;
             }
@@ -68,6 +78,10 @@ namespace g80 {
 
             auto operator+=(decimal r) -> decimal & {
                 auto gs = std::max(scale_, r.scale_); 
+
+                // std::cout << "gs: " << (int) gs << "\n";
+                // std::cout << "this->data_on_scale(gs): " << this->data_on_scale(gs) << "\n";
+                // std::cout << "r->data_on_scale(gs): " << r.data_on_scale(gs) << "\n";
                 data_ = this->data_on_scale(gs) + r.data_on_scale(gs); 
                 return *this;
             }
