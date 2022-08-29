@@ -47,16 +47,27 @@ namespace g80 {
             return data_ / mul;
         }
 
+
+        auto rescale(int8_t s) -> int64_t {
+            return data_ = this->data_on_scale(s);
+        }
+
+
         public:
 
             template<typename I> requires std::is_integral<I>::value
-            decimal(const I data, const int8_t scale = 2) : data_{data}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
+            decimal(const I i, const int8_t scale) : data_{i}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
 
             template<typename F> requires std::is_floating_point<F>::value
-            decimal(const F data, const int8_t scale = 2) : data_{data}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
+            decimal(const F f, const int8_t scale) : data_{static_cast<int64_t>(f * scale)}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
 
-            decimal(const decimal &r) : data_ {r.data_}, scale_{r.scale_}, scale_mul_{r.scale_mul_} {}
+            template<typename D> requires std::is_same<D, decimal>::value 
+            decimal(const decimal &d, const int8_t scale) : data_{d.data_on_scale(scale)}, scale_{scale}, scale_mul_{get_scale_mul(scale_)} {}
 
+
+
+//            decimal(const decimal &d, const int8_t scale) : data_{d.data_on_scale(scale)}, scale_{d.scale_}, scale_mul_{d.scale_mul_} {}
+            
             decimal(decimal &&r) : data_{r.data_}, scale_{r.scale_}, scale_mul_{r.scale_mul_} {}
 
             ~decimal() = default;
@@ -70,6 +81,8 @@ namespace g80 {
                 data_ = static_cast<int64_t>(r * scale_mul_);
                 return *this;
             }
+
+
 
             auto get_as_int() -> int64_t {return data_;}
             auto get_as_ldouble() -> long double {

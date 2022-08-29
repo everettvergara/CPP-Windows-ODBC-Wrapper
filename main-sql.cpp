@@ -8,12 +8,13 @@ using namespace g80::odbc;
 auto main() -> int {
 
 
-    decimal currency1(2);
-    decimal currency2(2);
+    decimal currency1(12345, 2);
+    decimal currency2(100.0f, 2);
+    // decimal currency3(currency1, 4);
 
-    currency2 += 123.45f;
+    // currency2 += 123.45f;
     //currency2 += currency1;
-    std::cout << currency2.get_as_ldouble() << "\n";
+    // std::cout << currency3.get_as_ldouble() << "\n";
 
     return true;
     odbc_trans mssql;
