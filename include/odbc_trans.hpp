@@ -1,4 +1,5 @@
 #pragma once
+
 #define UNICODE
 
 #include <iostream>
@@ -18,10 +19,10 @@
 #include "odbc_col_binding.hpp"
 
 namespace g80 {
+
     namespace odbc {
 
         #define SQL_QUERY_SIZE      8192
-
 
         class odbc_trans {
         
