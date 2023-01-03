@@ -14,11 +14,11 @@ auto main() -> int {
     if(!mssql.connect_by_dsn(L"test", L"sa", L"Kerberos2014!")) 
 
     std::wcout << mssql.get_formatted_last_msg();
-    // std::wcout << mssql.get_formatted_last_msg();
+// std::wcout << mssql.get_formatted_last_msg();
 
 //    wchar_t command[1024] {L"select * from users"};
 //    wchar_t command[1024] {L"exec sp_select_users"};
-    wchar_t command[1024] {L"exec sp_insert_users"};
+    wchar_t command[1024] {L"exec sp_template_list"};
 
     // wchar_t command[1024] {L"update a set a.name += 'x' from users as a where a.code = 'egv'"};
     mssql.exec(command);
